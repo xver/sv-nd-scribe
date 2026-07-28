@@ -74,7 +74,7 @@ Source Folder 2: ../../template/sv
    Name: SystemVerilog/Naturaldocs example
 
    GitHub Repository: https://github.com/xver/sv-nd-scribe
-      Branch: main/test/good_example
+      Branch: main/template/sv
 
 
 # This is where you tell Natural Docs which folders it should scan for source
