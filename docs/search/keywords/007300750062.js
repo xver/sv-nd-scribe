@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("sub",["Modport","Clocking"],[["subordinate",,[["nd_bus_if",,,,0,"File2:nd_bus_if.sv:nd_bus_if.subordinate","SystemVerilogClass:nd_bus_if:subordinate"]]],["subordinate_cb",,[["nd_bus_if",,,,1,"File2:nd_bus_if.sv:nd_bus_if.subordinate_cb","SystemVerilogClass:nd_bus_if:subordinate_cb"]]]]);

@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("m_n",["Variable"],[["m_num_items",,[["nd_sequence",,,,0,"File2:nd_sequence.sv:nd_sequence.m_num_items","SystemVerilogClass:nd_sequence:m_num_items"]]],["m_num_transactions",,[["nd_config",,,,0,"File2:nd_config.sv:nd_config.m_num_transactions","SystemVerilogClass:nd_config:m_num_transactions"]]]]);

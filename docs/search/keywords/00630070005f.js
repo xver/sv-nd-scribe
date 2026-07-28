@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("cp_",["Coverage"],[["cp_coverage_en",,[["nd_config",,,,0,"File2:nd_config.sv:nd_config.cp_coverage_en","SystemVerilogClass:nd_config:cp_coverage_en"]]],["cp_num_trans",,[["nd_config",,,,0,"File2:nd_config.sv:nd_config.cp_num_trans","SystemVerilogClass:nd_config:cp_num_trans"]]]]);

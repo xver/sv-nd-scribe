@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("tim",["Variable","Constraint"],[["TIMEOUT_CYCLES",,[[,,,,0,"File2:nd_program.sv:TIMEOUT_CYCLES"]]],["timeout_cycles_c",,[["nd_config",,,,1,"File2:nd_config.sv:nd_config.timeout_cycles_c","SystemVerilogClass:nd_config:timeout_cycles_c"]]]]);

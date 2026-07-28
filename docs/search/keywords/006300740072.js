@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("ctr",["Struct"],[["ctrl_fields_t",,[[,,,,0,"File2:nd_example_pkg.sv:ctrl_fields_t"]]]]);

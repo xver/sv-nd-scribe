@@ -1,0 +1,10 @@
+# VS Code
+.vscode/
+**/.vscode/
+
+# Python
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.pyo
+

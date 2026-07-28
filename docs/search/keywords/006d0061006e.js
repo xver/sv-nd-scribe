@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("man",["Modport","Clocking"],[["manager",,[["nd_bus_if",,,,0,"File2:nd_bus_if.sv:nd_bus_if.manager","SystemVerilogClass:nd_bus_if:manager"]]],["manager_cb",,[["nd_bus_if",,,,1,"File2:nd_bus_if.sv:nd_bus_if.manager_cb","SystemVerilogClass:nd_bus_if:manager_cb"]]]]);

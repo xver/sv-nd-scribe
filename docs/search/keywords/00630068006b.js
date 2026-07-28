@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("chk",["Function","Process"],[["chk_inst",,[[,,,,0,"File2:nd_bind.sv:chk_inst"]]],["chk_valid_reset_a",,[[,,,,1,"File2:nd_checker.sv:chk_valid_reset_a"]]],["chk_valid_reset_cov",,[[,,,,1,"File2:nd_checker.sv:chk_valid_reset_cov"]]]]);

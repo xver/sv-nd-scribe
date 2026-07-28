@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("int",["Variable"],[["internal_ready",,[["nd_dut",,,,0,"File2:nd_dut.sv:nd_dut.internal_ready","SystemVerilogModule:nd_dut:internal_ready"]]]]);

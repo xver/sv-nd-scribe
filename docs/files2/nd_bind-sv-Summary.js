@@ -1,0 +1,1 @@
+﻿NDFramePage.OnPageTitleLoaded("File2:nd_bind.sv","nd_bind.sv");NDSummary.OnSummaryLoaded("File2:nd_bind.sv",[["SystemVerilog","SystemVerilog"]],[["Files","File"],["Functions","Function"],["Groups","Group"]],[[54,0,0,"nd_bind.sv","nd_bind.sv"],[55,0,2,"Functions","Functions"],[56,0,1,"chk_inst","chk_inst"]]);

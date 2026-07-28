@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("val",["Variable","Property","Assertion"],[["valid",,[["nd_bus_if",,,,0,"File2:nd_bus_if.sv:nd_bus_if.valid","SystemVerilogClass:nd_bus_if:valid"]]],["valid_inactive_during_reset_p",,[[,,,,1,"File2:nd_checker.sv:valid_inactive_during_reset_p"]]],["valid_reset_a",,[[,,,,2,"File2:nd_protocol_checker.sv:valid_reset_a"]]]]);

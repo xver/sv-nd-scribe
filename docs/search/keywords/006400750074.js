@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("dut",["Variable"],[["dut",,[["nd_tb_top",,,,0,"File2:nd_tb_top.sv:nd_tb_top.dut","SystemVerilogModule:nd_tb_top:dut"]]]]);

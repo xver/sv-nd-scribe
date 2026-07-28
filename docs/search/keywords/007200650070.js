@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("rep",["Function"],[["report_phase",,[["nd_monitor",,,,0,"File2:nd_monitor.sv:nd_monitor.report_phase","SystemVerilogClass:nd_monitor:report_phase"]]]]);

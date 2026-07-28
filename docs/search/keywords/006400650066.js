@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("def",["Variable"],[["DEFAULT_TIMEOUT",,[["nd_config",,,,0,"File2:nd_config.sv:nd_config.DEFAULT_TIMEOUT","SystemVerilogClass:nd_config:DEFAULT_TIMEOUT"]]]]);

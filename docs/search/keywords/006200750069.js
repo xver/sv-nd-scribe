@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("bui",["Function"],[["build_phase",,[["nd_driver",,,,0,"File2:nd_driver.sv:nd_driver.build_phase","SystemVerilogClass:nd_driver:build_phase"],["nd_monitor",,,,0,"File2:nd_monitor.sv:nd_monitor.build_phase","SystemVerilogClass:nd_monitor:build_phase"]]]]);

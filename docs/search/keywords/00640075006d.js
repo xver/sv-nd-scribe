@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("dum",["Variable"],[["dummy_wire",,[["nd_dut",,,,0,"File2:nd_dut.sv:nd_dut.dummy_wire","SystemVerilogModule:nd_dut:dummy_wire"]]]]);

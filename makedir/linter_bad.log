@@ -1,0 +1,73 @@
+Files checked: 12
+Files failed: 0
+Errors found: 65
+Warnings found: 2
+
+Violations:
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bind.sv:1: [ERROR] [ND-001] Missing block comment file header (/* */).
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bind.sv:6: [ERROR] [ND-026] Bind directive is missing preceding NaturalDocs comment ('// Bind:').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_bus_if.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:1: [ERROR] [ND-001] File header Author field must contain a valid email address.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:10: [ERROR] [WKL-004] Interface 'nd_bus_interface' must end with '_if' suffix.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:10: [ERROR] [ND-004] Documented statement 'interface nd_bus_interface (input logic clk, input logic rst_n);' is missing a preceding NaturalDocs comment block.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:10: [ERROR] [ND-013] Interface 'nd_bus_interface' is missing preceding NaturalDocs documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:11: [ERROR] [ND-023] Variable or instance 'paddr' is missing documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:12: [ERROR] [ND-023] Variable or instance 'pwdata' is missing documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:14: [ERROR] [ND-031] Clocking block 'manager_cb' is missing a NaturalDocs comment ('//Clocking: manager_cb').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:20: [ERROR] [ND-032] Modport 'manager' is missing a NaturalDocs comment ('//Modport: manager').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:24: [ERROR] [ND-016] Missing labeled end statement for 'endinterface'. Expected 'endinterface : <name>'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:1: [ERROR] [ND-001] Documented file name 'wrong_filename.sv' in header does not match actual filename 'nd_config.sv'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:11: [ERROR] [ND-009] Class 'nd_config' is missing NaturalDocs comment ('// Class: nd_config').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:11: [ERROR] [ND-004] Documented statement 'class nd_config extends uvm_object;' is missing a preceding NaturalDocs comment block.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:14: [ERROR] [WKL-001] Class member 'raw_timeout' does not have required 'm_' prefix.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:23: [ERROR] [ND-030] Extern method implementation 'nd_config::do_print' is missing documentation comment.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_driver.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_driver.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_driver.sv:13: [ERROR] [ND-019] Documented identifier 'wrong_driver_name' does not match code identifier 'nd_driver'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_driver.sv:21: [ERROR] [ND-004] Documented statement 'function void build_phase(uvm_phase phase);' is missing a preceding NaturalDocs comment block.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_driver.sv:21: [ERROR] [ND-017] Function 'build_phase' is missing a NaturalDocs comment ('// Function: build_phase').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_dut.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_dut.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_dut.sv:10: [ERROR] [ND-004] Documented statement 'module nd_dut (' is missing a preceding NaturalDocs comment block.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_dut.sv:10: [ERROR] [ND-014] Module 'nd_dut' is missing preceding NaturalDocs documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_dut.sv:15: [ERROR] [ND-023] Variable or instance 'dummy_wire' is missing documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_example_pkg.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_example_pkg.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_example_pkg.sv:9: [ERROR] [ND-010] Enum typedef is missing preceding NaturalDocs documentation ('// enum: <name>').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_example_pkg.sv:10: [ERROR] [ND-024] Missing inline documentation comment ('//') for enum item or struct field.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_example_pkg.sv:11: [ERROR] [ND-024] Missing inline documentation comment ('//') for enum item or struct field.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_example_pkg.sv:14: [ERROR] [ND-011] Typedef declaration is missing preceding NaturalDocs documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_example_pkg.sv:14: [ERROR] [ND-023] Typedef or variable declaration is missing documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_example_pkg.sv:16: [ERROR] [WKL-002] Typedef 'my_custom_type' must end in '_t'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_example_pkg.sv:16: [ERROR] [ND-011] Typedef declaration is missing preceding NaturalDocs documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_example_pkg.sv:16: [ERROR] [ND-023] Typedef or variable declaration is missing documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_monitor.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_monitor.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_monitor.sv:15: [ERROR] [ND-003] Invalid keyword format in comment: missing space after colon in '//Group:InvalidHeader'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_monitor.sv:15: [ERROR] [ND-006] Malformed group heading. Expected format: '// Group: Section Name'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_monitor.sv:15: [ERROR] [ND-005] Missing space after colon in keyword 'Group:'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_monitor.sv:17: [ERROR] [ND-017] Function 'new' is missing a NaturalDocs comment ('// Function: new').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_protocol_checker.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_protocol_checker.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_protocol_checker.sv:10: [ERROR] [ND-018] Checker 'nd_protocol_checker' is missing documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_protocol_checker.sv:10: [ERROR] [ND-025] Checker 'nd_protocol_checker' is missing preceding NaturalDocs comment ('// Checker: nd_protocol_checker').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_protocol_checker.sv:16: [ERROR] [ND-015] Property 'p_valid' is missing preceding NaturalDocs documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_protocol_checker.sv:18: [ERROR] [ND-016] Missing labeled end statement for 'endproperty'. Expected 'endproperty : <name>'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_sequence.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:17: [ERROR] [ND-020] Constraint 'c_len' is missing preceding NaturalDocs comment.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:21: [ERROR] [ND-017] Function 'new' is missing a NaturalDocs comment ('// Function: new').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:26: [ERROR] [ND-004] Documented statement 'module seq_runner;' is missing a preceding NaturalDocs comment block.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:26: [ERROR] [ND-014] Module 'seq_runner' is missing preceding NaturalDocs documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:27: [ERROR] [ND-027] Process block 'initial' is missing preceding NaturalDocs comment.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_test_program.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_test_program.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_test_program.sv:10: [ERROR] [ND-029] Program 'nd_test_program' is missing preceding NaturalDocs comment.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_test_program.sv:11: [ERROR] [WKL-006] Trailing whitespace found.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_test_program.sv:11: [ERROR] [ND-027] Process block 'initial' is missing preceding NaturalDocs comment.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_top_wrapper.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:1: [ERROR] [ND-002] Missing include guard (`ifndef / `define).
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:7: [ERROR] [WKL-003] Macro `small_macro` should be in UPPER_SNAKE_CASE.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:7: [ERROR] [ND-007] Macro `small_macro` is missing NaturalDocs documentation ('// define: small_macro').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:12: [ERROR] [WKL-008] Tab character (\t) found in line.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:13: [ERROR] [ND-028] Continuous assignment ('assign') is missing preceding NaturalDocs comment.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:14: [WARNING] [WKL-007] Line exceeds maximum length of 120 characters (155 > 120).
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_transaction.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:10: [ERROR] [ND-007] Macro `MAX_TRANSACTIONS` is missing NaturalDocs documentation ('// define: MAX_TRANSACTIONS').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:19: [ERROR] [ND-021] Covergroup 'trans_cg' is missing preceding NaturalDocs comment.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:20: [ERROR] [ND-022] Coverpoint 'm_addr' is missing preceding NaturalDocs comment.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:23: [ERROR] [ND-017] Function 'new' is missing a NaturalDocs comment ('// Function: new').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:31: [WARNING] [WKL-005] File ends with multiple empty lines.

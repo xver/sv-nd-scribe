@@ -1,0 +1,283 @@
+Format: 2.4 (Beta 1)
+
+# This is the Natural Docs comments file for this project.  If you change
+# anything here, it will apply to THIS PROJECT ONLY.  You can edit the version
+# in Natural Docs' Config folder to make the changes apply to all projects,
+# but it's recommended that you edit this version instead.
+
+
+# Ignored Keywords
+# ------------------------------------------------------------------------
+
+# If you'd like to prevent keywords from being recognized by Natural Docs,
+# you can do it like this:
+#
+# Ignore Keywords:
+#    [keyword]
+#    [keyword]
+#    ...
+
+
+# Comment Types
+# ------------------------------------------------------------------------
+# The syntax reference is after the definitions.
+
+Comment Type: Constraint
+
+   Display Name: Constraint
+   Plural Display Name: Constraints
+   Simple Identifier: Constraint
+
+   Flags: Code, Variable Type
+
+   SystemVerilog Keywords:
+      constraint
+      constraints
+
+
+Comment Type: Enum
+
+   Display Name: Enumeration
+   Plural Display Name: Enumerations
+   Simple Identifier: Enum
+
+   Flags: Code, Variable Type, Enum
+
+   SystemVerilog Keywords:
+      enum, enums
+
+
+Comment Type: Union
+
+   Display Name: Union
+   Plural Display Name: Unions
+   Simple Identifier: Union
+
+   Flags: Code, Variable Type
+
+   SystemVerilog Keywords:
+      union, unions
+
+
+Alter Comment Type: Struct
+
+   Display Name: Structure
+   Plural Display Name: Structures
+   Simple Identifier: Struct
+
+   Flags: Code, Variable Type
+
+   SystemVerilog Keywords:
+      struct, structs
+
+
+Alter Comment Type: Function
+
+   SystemVerilog Keywords:
+      task, tasks
+
+
+Alter Comment Type: Function
+
+   SystemVerilog Keywords:
+      bind, binds
+
+
+Comment Type: Checker
+
+   Display Name: Checker
+   Plural Display Name: Checkers
+   Simple Identifier: Checker
+
+   Flags: Code
+
+   Keywords:
+      checker
+      checkers
+
+
+Comment Type: Assertion
+
+   Display Name: Assertion
+   Plural Display Name: Assertions
+   Simple Identifier: Assertion
+
+   Flags: Code
+
+   Keywords:
+      assertion
+      assertions
+
+
+Alter Comment Type: Macro
+
+   Flags: Code
+
+   SystemVerilog Keywords:
+      define
+      macro
+      macros
+
+
+Comment Type: UVM Macro
+
+   Display Name: UVM Macro
+   Plural Display Name: UVM Macros
+   Simple Identifier: UVMMacro
+
+   Flags: Code
+
+   SystemVerilog Keywords:
+      uvm_macro
+      uvm_component_utils
+      uvm_object_utils
+      uvm_component_param_utils
+      uvm_object_param_utils
+
+
+Comment Type: Coverage
+
+   Display Name: Coverage
+   Plural Display Name: Coverage
+   Simple Identifier: Coverage
+
+   Flags: Code
+
+   SystemVerilog Keywords:
+      coverpoint
+      cross
+      coverage
+      covergroup
+      covergroups
+
+
+Comment Type: Process
+
+   Display Name: Process
+   Plural Display Name: Processes
+   Simple Identifier: Process
+
+   Flags: Code
+
+   SystemVerilog Keywords:
+      process
+      forever
+      initial
+      always
+      always_comb
+      always_ff
+      always_latch
+
+
+Comment Type: Assignment
+
+   Display Name: Assignment
+   Plural Display Name: Assignments
+   Simple Identifier: Assignment
+
+   Flags: Code
+
+   Keywords:
+      assign
+      assignment
+
+
+Comment Type: Program
+
+   Display Name: Program
+   Plural Display Name: Programs
+   Simple Identifier: Program
+
+   Flags: Code
+
+   SystemVerilog Keywords:
+      program
+      programs
+
+
+Comment Type: Modport
+
+   Display Name: Modport
+   Plural Display Name: Modports
+   Simple Identifier: Modport
+
+   Flags: Code
+
+   SystemVerilog Keywords:
+      modport
+      modports
+
+
+Comment Type: Clocking
+
+   Display Name: Clocking Block
+   Plural Display Name: Clocking Blocks
+   Simple Identifier: Clocking
+
+   Flags: Code
+
+   SystemVerilog Keywords:
+      clocking
+      clockings
+
+
+# Each Natural Docs comment has a corresponding type which determine its
+# behavior.  You can define your own here or override the settings of the
+# existing ones.
+#
+# Comment Type: [name]
+# Alter Comment Type: [name]
+#    Creates a new comment type or changes an existing one.
+#
+# Display Name: [name]
+# Plural Display Name: [name]
+#    The singular and plural name of the comment type as it should appear in
+#    the output.
+#
+# Simple Identifier: [name]
+#    The name of the comment type using only the letters A to Z.  No spaces,
+#    numbers, symbols, or Unicode allowed.  Defaults to the comment type name
+#    minus any unacceptable characters.  This is used to generate things like
+#    CSS class names.
+#
+# Scope: [normal|start|end|always global]
+#    How the comment affects scope.  Defaults to normal.
+#    normal        - The comment stays within the current scope.
+#    start         - The comment starts a new scope for all the comments
+#                    beneath it, like class comments.
+#    end           - The comment resets the scope back to global for all the
+#                    comments beneath it, like section comments.
+#    always global - The comment is defined as a global symbol, but does not
+#                    change the scope for any other comments.
+#
+# Flags: [flag], [flag], ...
+#    A combination of settings that apply to the comment type.
+#    Code, File, or Documentation
+#        Whether it's used to describe a code element, a file, or is a
+#        standalone documentation comment.  Defaults to Code.
+#    Variable Type
+#        Whether it describes a code element that can be used as a variable's
+#        type.
+#    Class Hierarchy or Database Hierarchy
+#        Whether it describes a code element that should be included in the
+#        class or database hierarchy.  Requires Scope: Start.
+#    Enum
+#        Whether it describes an enum.
+#
+# Keywords:
+#    [keyword]
+#    [keyword], [plural keyword]
+#    ...
+#    A list of the comment type's keywords.  Each line after the heading is
+#    the keyword and optionally its plural form for list comments.  You can
+#    reuse existing keywords to change their definition.  When using
+#    "Alter Comment Type", these keywords are added to the existing ones
+#    rather than replacing them.
+#
+# [Language] Keywords:
+#    [keyword]
+#    [keyword], [plural keyword]
+#    ...
+#    A list of keywords that only apply to the comment type when using a
+#    specific programming language.  Each line after the heading is the
+#    keyword and optionally its plural form for list comments.

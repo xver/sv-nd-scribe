@@ -1,0 +1,1 @@
+﻿NDSearch.OnPrefixDataLoaded("m_e",["Variable"],[["m_enable_coverage",,[["nd_config",,,,0,"File2:nd_config.sv:nd_config.m_enable_coverage","SystemVerilogClass:nd_config:m_enable_coverage"]]]]);
