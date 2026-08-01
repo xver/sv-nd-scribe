@@ -31,11 +31,12 @@ Also, check out other open-source projects by IC Verimeter.
   - [Usage in Python](#usage-in-python)
 - [Linting Rules](#linting-rules)
 - [VS Code Extension](#vs-code-extension)
-  - [Option 1: Install from the pre-built .vsix](#option-1-install-from-the-pre-built-vsix)
-  - [Option 2: Build and install from source](#option-2-build-and-install-from-source)
+  - [Option 1: Install from Extension View (TODO)](#option-1-install-from-extension-view-todo)
+  - [Option 2: Install from the pre-built .vsix](#option-2-install-from-the-pre-built-vsix)
   - [Extension Configuration](#extension-configuration)
 - [AI Agent](#ai-agent-todo)
-- [Support](#ai-agent-todo)
+- [Support](#support)
+
 ## Prerequisites
 
 To use the static linter, you must have the following installed:
@@ -147,7 +148,13 @@ For full details, see the [VS Code Extension README](vscode/README.md).
 
 A pre-built VS Code extension is included in the `vscode/` directory. It provides real-time in-editor diagnostics for SystemVerilog files by running the linter on every file save.
 
-### Option 1: Install from the pre-built .vsix
+### Option 1: Install from Extension View *(TODO)*
+
+> **TODO**: The extension is not yet published.
+
+Once published, you will be able to download and install the extension directly from IDEs (VS Code, Antigravity, Cursor, etc.) by searching for **SV ND Scribe** in the Extensions view (`Ctrl+Shift+X`) and clicking **Install**.
+
+### Option 2: Install from the pre-built .vsix
 
 The packaged extension file is located at `vscode/sv-nd-scribe-vscode-*.vsix`.
 
@@ -161,15 +168,6 @@ The packaged extension file is located at `vscode/sv-nd-scribe-vscode-*.vsix`.
 **Via the command line:**
 ```bash
 code --install-extension /path/to/sv-nd-scribe/vscode/sv-nd-scribe-vscode-*.vsix
-```
-
-### Option 2: Build and install from source
-
-If you want to rebuild the `.vsix` from source (requires Node.js):
-```bash
-cd vscode
-npx -y @vscode/vsce package
-code --install-extension sv-nd-scribe-vscode-*.vsix
 ```
 
 ### Extension Configuration
