@@ -205,6 +205,12 @@ SV ND Scribe includes an AI agent component that will automatically analyze lint
 - Interactive mode: review and accept/reject each suggested fix
 - Batch mode: apply all safe fixes automatically
 
+## Support
+
+For assistance with integration or customization, contact us at [icshunt.help@gmail.com](mailto:icshunt.help@gmail.com).
+
+Report bugs to [Issues](https://github.com/xver/sv-nd-scribe/issues).
+
 ---
 
 ![img](https://raw.githubusercontent.com/xver/icecream_sv/main/doc/IcVerimeter_logo.png) [![img](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/xver)
