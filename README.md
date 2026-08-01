@@ -1,5 +1,25 @@
-# SV ND Scribe
-SV ND Scribe is a SystemVerilog toolkit that combines NaturalDocs-based documentation rules, a static linter for detecting issues in source files, a VS Code extension for real-time in-editor feedback, and an AI agent that helps resolve issues identified by the linter.
+# Welcome to sv-nd-scribe - NaturalDocs and Linting for SystemVerilog! ![](https://raw.githubusercontent.com/xver/icecream_sv/main/doc/IcVerimeter_logo.png) [![](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/xver)
+
+![sv-nd-scribe Logo](scribe_logo.jpg)
+
+Never write undocumented or unformatted SystemVerilog again.
+
+The **sv-nd-scribe** toolkit combines NaturalDocs-based documentation rules, a static linter for detecting issues in source files, a VS Code extension for real-time in-editor feedback, and an AI agent that helps resolve issues identified by the linter. **sv-nd-scribe** is available under the MIT License and can be used without restriction in both open-source and commercial applications.
+
+Also, check out other open-source projects by IC Verimeter.
+
+- [The Shunt](https://github.com/xver/Shunt): An Open Source Client/Server TCP/IP socket-based communication library designed for integrating SystemVerilog simulations with external applications in C, SystemC, and Python.
+- [SVDB Gateway](https://github.com/xver/svdb_gateway): A bridge between SystemVerilog and SQLite databases, allowing SystemVerilog code to interact with SQLite through the Direct Programming Interface (DPI).
+- [icecream_sv](https://github.com/xver/icecream_sv): IceCream for SystemVerilog!
+
+## Why use sv-nd-scribe?
+
+* **Consistent Documentation**: Enforce NaturalDocs rules across your SystemVerilog files.
+* **Real-time Feedback**: Use the VS Code extension for on-the-fly linting.
+* **Lightweight & Portable**: Standard Python implementation, fits seamlessly into Makefiles.
+* **AI Assistance**: Planned AI agent to resolve issues and generate missing comments automatically.
+
+---
 
 ## Table of Contents
 
@@ -123,22 +143,24 @@ See the full rule reference: [linter/rules/RULES.md](linter/rules/RULES.md)
 
 ## VS Code Extension
 
+For full details, see the [VS Code Extension README](vscode/README.md).
+
 A pre-built VS Code extension is included in the `vscode/` directory. It provides real-time in-editor diagnostics for SystemVerilog files by running the linter on every file save.
 
 ### Option 1: Install from the pre-built .vsix
 
-The packaged extension file is located at `vscode/sv-nd-scribe-vscode-0.1.0.vsix`.
+The packaged extension file is located at `vscode/sv-nd-scribe-vscode-*.vsix`.
 
 **Via VS Code UI:**
 1. Open VS Code.
 2. Press `Ctrl+Shift+P` (macOS: `Cmd+Shift+P`) to open the Command Palette.
 3. Type and select **`Extensions: Install from VSIX...`**.
-4. Browse to `sv-nd-scribe/vscode/sv-nd-scribe-vscode-0.1.0.vsix` and click **Install**.
+4. Browse to `sv-nd-scribe/vscode/sv-nd-scribe-vscode-*.vsix` and click **Install**.
 5. Reload VS Code when prompted.
 
 **Via the command line:**
 ```bash
-code --install-extension /path/to/sv-nd-scribe/vscode/sv-nd-scribe-vscode-0.1.0.vsix
+code --install-extension /path/to/sv-nd-scribe/vscode/sv-nd-scribe-vscode-*.vsix
 ```
 
 ### Option 2: Build and install from source
@@ -147,7 +169,7 @@ If you want to rebuild the `.vsix` from source (requires Node.js):
 ```bash
 cd vscode
 npx -y @vscode/vsce package
-code --install-extension sv-nd-scribe-vscode-0.1.0.vsix
+code --install-extension sv-nd-scribe-vscode-*.vsix
 ```
 
 ### Extension Configuration
@@ -182,3 +204,8 @@ SV ND Scribe includes an AI agent component that will automatically analyze lint
 - Auto-generate missing file headers, group headings, and inline documentation
 - Interactive mode: review and accept/reject each suggested fix
 - Batch mode: apply all safe fixes automatically
+
+---
+
+![img](https://raw.githubusercontent.com/xver/icecream_sv/main/doc/IcVerimeter_logo.png) [![img](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/xver)
+Copyright (c) 2026 IC Verimeter

@@ -1,4 +1,6 @@
-# SV ND Scribe - VS Code Extension
+# SV ND Scribe - VS Code Extension ![](https://raw.githubusercontent.com/xver/icecream_sv/main/doc/IcVerimeter_logo.png) [![](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/xver)
+
+![sv-nd-scribe Logo](scribe_logo.jpg)
 
 Real-time SystemVerilog in-editor diagnostic feedback utilizing the **SV ND Scribe** static linter rules.
 
@@ -36,5 +38,10 @@ Use the VS Code Command Palette (`Ctrl+Shift+P`) to run:
 Install the packaged `.vsix` file using the VS Code CLI or Extensions panel:
 
 ```bash
-code --install-extension sv-nd-scribe-vscode-0.1.0.vsix
+code --install-extension sv-nd-scribe-vscode-*.vsix
 ```
+
+---
+
+![img](https://raw.githubusercontent.com/xver/icecream_sv/main/doc/IcVerimeter_logo.png) [![img](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/xver)
+Copyright (c) 2026 IC Verimeter
