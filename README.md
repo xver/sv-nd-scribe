@@ -35,7 +35,7 @@ Also, check out other open-source projects by IC Verimeter.
   - [Option 2: Build and install from source](#option-2-build-and-install-from-source)
   - [Extension Configuration](#extension-configuration)
 - [AI Agent](#ai-agent-todo)
-
+- [Support](#ai-agent-todo)
 ## Prerequisites
 
 To use the static linter, you must have the following installed:
