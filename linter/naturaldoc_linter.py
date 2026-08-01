@@ -192,11 +192,9 @@ class NaturalDocLinter(BaseLinter):
         self.add_rule(ModportDocumentationRule(self._rule_config("[ND-032]")))
 
     def prepare_context(self, file_path: str, file_content: str) -> Optional[ASTContext]:
-        try:
-            with open(file_path, 'rb') as f:
-                file_bytes = f.read()
-        except Exception:
-            file_bytes = file_content.encode('utf-8', errors='ignore')
+        # Always use file_content to generate bytes so that byte offsets match the string
+        # sent to verible-verilog-syntax over stdin, preventing CRLF/LF desynchronization.
+        file_bytes = file_content.encode('utf-8', errors='ignore')
 
         if not self.is_available or not getattr(self, 'verible_bin', None):
             return ASTContext(tree=None, file_bytes=file_bytes, rawtokens=None, errors=None)

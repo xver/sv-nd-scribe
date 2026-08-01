@@ -18,7 +18,6 @@
 `define ND_CONFIG_SV
 
   //Group: Configuration Classes
-
   //Class: nd_config
   //Configuration class for the verification environment.
   //Contains all configuration parameters for the testbench components.

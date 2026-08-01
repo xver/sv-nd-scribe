@@ -436,13 +436,16 @@ class VeribleVerilogSyntax:
     if options["gen_rawtokens"]:
       args.append("-printrawtokens")
 
+    input_bytes = None
+    if input_ is not None:
+        input_bytes = input_ if isinstance(input_, bytes) else input_.encode("utf-8")
+
     proc = subprocess.run([self.executable, *args , *paths],
         stdout=subprocess.PIPE,
-        input=input_,
-        encoding="utf-8",
+        input=input_bytes,
         check=False)
 
-    json_data = json.loads(proc.stdout)
+    json_data = json.loads(proc.stdout.decode("utf-8"))
     data = {}
     for file_path, file_json in json_data.items():
       file_data = SyntaxData()
