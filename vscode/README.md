@@ -12,15 +12,24 @@ Real-time SystemVerilog in-editor diagnostic feedback utilizing the **SV ND Scri
 
 1. **Python 3**
 2. **Verible** - specifically `verible-verilog-syntax` installed in your PATH.
-3. The standalone `sv-nd-scribe` linter package installed at `/home/v/proj/sv-nd-scribe/`.
+3. The standalone `sv-nd-scribe` linter package downloaded to your machine.
 
 ## Configuration
 
 You can configure this extension via VS Code Settings:
 
-* `sv-nd-scribe.linterPath`: Absolute path to `linter.py` (Default: `/home/v/proj/sv-nd-scribe/linter/linter.py`).
+* `sv-nd-scribe.linterPath`: Absolute path to `linter.py`. If left blank, it automatically falls back to `$SVND_SCRIBE_HOME/linter/linter.py` (Default: `""`).
 * `sv-nd-scribe.pythonPath`: Path to the python interpreter (Default: `python3`).
 * `sv-nd-scribe.runOn`: Trigger execution on save (`onSave`) or when opening documents (`onOpen`).
+
+## Commands
+
+Use the VS Code Command Palette (`Ctrl+Shift+P`) to run:
+
+- **`SV_Scribe: Lint`**: Manually lint the active file.
+- **`SV_Scribe: Clear`**: Clear diagnostic outlines.
+- **`SV_Scribe: Lint_All`**: Lint all open SystemVerilog documents.
+- **`SV_Scribe: Status`** (alias: **`SV_Scribe: Verify linter installation`**): Check environment health and dependencies.
 
 ## Installation
 

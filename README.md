@@ -26,6 +26,9 @@ To use the static linter, you must have the following installed:
    - Ensure the executable (`verible-verilog-syntax` or `verible-verilog-syntax.exe`) is available in your system's `PATH`.
    - Alternatively, you can specify its location by setting the `VERIBLE_HOME` environment variable to the directory where it's installed (the linter will look in `$VERIBLE_HOME/bin/` and `$VERIBLE_HOME/`).
    - *Note: If you're running this in WSL, a Windows installation of Verible (.exe) in your PATH is fully supported.*
+3. **SVND_SCRIBE_HOME** (Mandatory)
+   - Set this environment variable to the root directory of this downloaded repository.
+   - The VS Code extension and other tools require this variable to locate the linter scripts and configurations.
 
 ## Running the Linter
 
@@ -44,6 +47,8 @@ make <target>
 | `nd`        | Generates NaturalDocs HTML documentation from `docs/nd_config/`. Requires `ND_HOME` to be set. |
 | `lint`      | Lints the production template files listed in `template_sv.f`. Exits non-zero on errors. |
 | `lint_bad`  | Lints the negative-test files in `test_bad_sv.f`. Used to verify that all rules are triggered. |
+| `status`    | Checks the linter environment and verifies all dependencies are satisfied. |
+| `vscode`    | Compiles and packages the VS Code extension into a `.vsix` file. |
 | `help`      | Displays a formatted summary of all Makefile targets and configurable variables. |
 
 **Variables** (can be overridden on the command line):
@@ -74,6 +79,9 @@ You can run the linter directly from the command line against your source files 
 ```bash
 # Display help information
 python3 -m linter --help
+
+# Check linter environment and dependencies
+python3 -m linter --status
 
 # Run against one or more files
 python3 -m linter example/good_example.sv path/to/other_file.sv
@@ -148,9 +156,18 @@ After installation, configure the extension via VS Code Settings (`Ctrl+,`) by s
 
 | Setting | Default | Description |
 |---|---|---|
-| `sv-nd-scribe.linterPath` | `/home/v/proj/sv-nd-scribe/linter/linter.py` | Path to the `linter.py` script |
+| `sv-nd-scribe.linterPath` | `""` | Absolute path to `linter.py`. If empty, it automatically falls back to `$SVND_SCRIBE_HOME/linter/linter.py`. |
 | `sv-nd-scribe.pythonPath` | `python3` | Path to your Python interpreter |
 | `sv-nd-scribe.runOn` | `onSave` | When to trigger linting: `onSave` or `onOpen` |
+
+### Extension Commands
+
+In addition to automatically linting in the background, you can manually trigger the following actions via the VS Code Command Palette (`Ctrl+Shift+P`):
+
+- **`SV_Scribe: Lint`**: Lints the currently active SystemVerilog file immediately.
+- **`SV_Scribe: Clear`**: Clears any diagnostic underlines from the current document.
+- **`SV_Scribe: Lint_All`**: Runs the linter across every SystemVerilog file you currently have open in your workspace.
+- **`SV_Scribe: Status`** (alias: **`SV_Scribe: Verify linter installation`**): Verifies your environment by checking if the linter script exists and if its dependencies are satisfied.
 
 ## AI Agent *(TODO)*
 

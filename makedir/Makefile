@@ -1,4 +1,4 @@
-.PHONY: all nd lint lint_bad help
+.PHONY: all nd lint lint_bad status vscode help
 
 MANIFEST := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))template_sv.f
 MANIFEST_BAD := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))test_bad_sv.f
@@ -31,6 +31,16 @@ lint:
 lint_bad:
 	cd .. && $(PYTHON) -m linter -f $(MANIFEST_BAD) -o $(CURDIR)/$(LOG_BAD_FILE)
 
+status:
+	cd .. && $(PYTHON) -m linter --status
+
+vscode:
+	@if [ "$(NEW)" = "1" ]; then \
+		echo "Bumping VS Code extension version..."; \
+		cd ../vscode && npm version patch --no-git-tag-version; \
+	fi
+	cd ../vscode && npx -y @vscode/vsce package
+
 help:
 	@echo ""
 	@echo "Usage: make [target] [VARIABLE=value]"
@@ -40,6 +50,8 @@ help:
 	@echo "  nd           Generate NaturalDocs HTML documentation (requires ND_HOME)"
 	@echo "  lint         Lint production template files (template_sv.f)"
 	@echo "  lint_bad     Lint negative-test files (test_bad_sv.f), used to verify all rules fire"
+	@echo "  status       Check linter environment and dependencies"
+	@echo "  vscode       Compile and package the VS Code extension (.vsix)"
 	@echo "  help         Show this help message"
 	@echo ""
 	@echo "Variables (override on command line, e.g. make lint PYTHON=python3.11):"
@@ -47,4 +59,5 @@ help:
 	@echo "  PYTHON       Python interpreter  [default: python3]"
 	@echo "  LOG_FILE     Log file for 'lint' target            [default: linter.log]"
 	@echo "  LOG_BAD_FILE Log file for 'lint_bad' target        [default: linter_bad.log]"
+	@echo "  NEW          Set to 1 (with 'vscode' target) to auto-increment version"
 	@echo ""

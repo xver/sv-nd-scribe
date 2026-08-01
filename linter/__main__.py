@@ -46,9 +46,26 @@ def main():
     parser.add_argument("-o", "--log-file", default="linter.log", help="Write lint results to a log file (default: linter.log)")
     parser.add_argument("--json", action="store_true", help="Output lint results in JSON format")
     parser.add_argument("--fail-on-warnings", action="store_true", help="Return non-zero exit code on warnings")
+    parser.add_argument("--status", action="store_true", help="Check linter environment and dependencies")
     
     args = parser.parse_args()
     
+    if args.status:
+        if "SVND_SCRIBE_HOME" not in os.environ:
+            print("Error: SVND_SCRIBE_HOME environment variable is missing. It is required for external tool integrations (like the VS Code extension).")
+            sys.exit(1)
+            
+        config_mgr = ConfigManager(config_file=args.config)
+        linter_config = config_mgr.get_linter_config("naturaldoc_linter")
+        registry = get_registry()
+        linter_instance = registry.get_linter("naturaldoc_linter", config=linter_config)
+        if not linter_instance:
+            print("Error: naturaldoc_linter is unavailable. Is verible-verilog-syntax installed and in your PATH?")
+            sys.exit(1)
+        else:
+            print("OK: Linter dependencies satisfied and SVND_SCRIBE_HOME is set.")
+            sys.exit(0)
+            
     files_to_lint = []
     if args.file_list:
         files_to_lint.extend(parse_manifest_file(args.file_list))
