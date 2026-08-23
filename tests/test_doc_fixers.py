@@ -76,8 +76,8 @@ class TestDocFixers(unittest.TestCase):
         self.assertIn("// Function: compute\n", proposal.patch_lines[0])
         self.assertIn("// Computes sum\n", proposal.patch_lines[0])
         self.assertIn("Parameters:\n", proposal.patch_lines[0])
-        self.assertIn("a - <description>", proposal.patch_lines[0])
-        self.assertIn("b - <description>", proposal.patch_lines[0])
+        self.assertIn("a - Description for a", proposal.patch_lines[0])
+        self.assertIn("b - Description for b", proposal.patch_lines[0])
 
     def test_fix_nd023_variable_fallback_todo(self):
         fixer = FixNd023()
@@ -269,6 +269,29 @@ class TestDocFixers(unittest.TestCase):
         self.assertEqual(proposal.replace_range, (1, 2))
         self.assertEqual(proposal.patch_lines[0], f"  // Variable: {new_name}\n")
         self.assertEqual(proposal.patch_lines[1], f"  // TODO: Add description for variable '{new_name}'\n")
+
+    def test_fix_nd017_void_function(self):
+        fixer = FixNd017()
+        violation = {"rule": "ND-017", "file": "test.sv", "line": 1}
+        lines = ["  function void build_phase(uvm_phase phase);\n"]
+        proposal = fixer.propose(violation, lines)
+        self.assertIsNotNone(proposal)
+        self.assertIn("  // Function: build_phase\n", proposal.patch_lines[0])
+        self.assertIn("  // TODO: Add description for function 'build_phase'\n", proposal.patch_lines[0])
+        self.assertIn("phase - Description for phase", proposal.patch_lines[0])
+
+    def test_fix_nd017_ast_violation_message_reuse(self):
+        fixer = FixNd017()
+        violation = {
+            "rule": "ND-017",
+            "file": "test.sv",
+            "line": 1,
+            "message": "Function 'build_phase' is missing a NaturalDocs comment ('// Function: build_phase')."
+        }
+        lines = ["  virtual function void build_phase(uvm_phase phase);\n"]
+        proposal = fixer.propose(violation, lines)
+        self.assertIsNotNone(proposal)
+        self.assertIn("  // Function: build_phase\n", proposal.patch_lines[0])
 
 
 if __name__ == "__main__":

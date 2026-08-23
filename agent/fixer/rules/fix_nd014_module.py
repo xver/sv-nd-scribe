@@ -3,9 +3,14 @@
 import re
 from typing import List, Dict, Any, Optional
 from agent.fixer.base_fixer import BaseFixer, FixProposal
-from agent.fixer.doc_helper import build_naturaldocs_comment
+from agent.fixer.doc_helper import (
+    build_naturaldocs_comment,
+    extract_name_from_violation,
+    extract_construct_params_and_ports,
+    build_construct_extra_lines,
+)
 
-_RE = re.compile(r'\bmodule\s+([A-Za-z0-9_]+)')
+_RE = re.compile(r'\bmodule\s+(?:automatic\s+)?([A-Za-z0-9_]+)')
 
 
 class FixNd014(BaseFixer):
@@ -25,15 +30,22 @@ class FixNd014(BaseFixer):
         line = source_lines[line_idx]
         indent = line[: len(line) - len(line.lstrip())]
 
-        name = "item"
-        match = _RE.search(line)
-        if match:
-            name = match.group(match.lastindex or 1)
-        elif line.strip() == "" and line_idx + 1 < len(source_lines):
-            next_line = source_lines[line_idx + 1]
-            m = _RE.search(next_line)
-            if m:
-                name = m.group(1)
+        name = extract_name_from_violation(violation)
+        if not name or name == "item":
+            match = _RE.search(line)
+            if match:
+                name = match.group(match.lastindex or 1)
+            elif line.strip() == "" and line_idx + 1 < len(source_lines):
+                next_line = source_lines[line_idx + 1]
+                m = _RE.search(next_line)
+                if m:
+                    name = m.group(1)
+
+        if not name:
+            name = "item"
+
+        params, ports = extract_construct_params_and_ports(line, source_lines, line_idx)
+        extra_lines = build_construct_extra_lines(params, ports, indent)
 
         doc_comment, llm_generated = build_naturaldocs_comment(
             tag="Module",
@@ -44,6 +56,7 @@ class FixNd014(BaseFixer):
             kind_label="module",
             provider=kwargs.get("provider"),
             skill_name="nd_comment",
+            extra_lines=extra_lines,
         )
         return FixProposal(
             rule_id="ND-014",

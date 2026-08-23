@@ -82,11 +82,18 @@ class ClassMemberPrefixRule(BaseRule):
 
         # Fallback text parsing
         in_class = False
+        in_param_header = False
         lines = file_content.splitlines()
         for i, line in enumerate(lines):
             stripped = line.strip()
             if re.match(r"^\s*class\s+", stripped):
                 in_class = True
+                if "#(" in stripped and ";" not in stripped:
+                    in_param_header = True
+                continue
+            if in_param_header:
+                if ";" in stripped:
+                    in_param_header = False
                 continue
             if re.match(r"^\s*endclass\b", stripped):
                 in_class = False

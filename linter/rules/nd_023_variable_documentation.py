@@ -86,6 +86,7 @@ class VariableDocumentationRule(BaseRule):
         in_modport = False
         in_struct = False
         in_function_or_task = False
+        in_param_header = False
 
         for i, line in enumerate(lines):
             stripped = line.strip()
@@ -102,8 +103,8 @@ class VariableDocumentationRule(BaseRule):
                 continue
 
             # Track function / task body scope (skip local variables)
-            if re.search(r"^\s*(?:pure\s+|virtual\s+|protected\s+|local\s+|static\s+|extern\s+)*(?:function|task)\b", line):
-                if not stripped.endswith(";"):
+            if re.search(r"^\s*(?:pure\s+|virtual\s+|protected\s+|local\s+|static\s+|extern\s+|external\s+)*(?:function|task)\b", line):
+                if not re.search(r"\b(extern|external|pure\s+virtual)\b", line):
                     in_function_or_task = True
                 continue
             if stripped.startswith("endfunction") or stripped.startswith("endtask"):
@@ -128,12 +129,21 @@ class VariableDocumentationRule(BaseRule):
                     in_modport = False
                 continue
 
-            # Skip documentation requirements inside clocking, modport, struct/union/enum structures, or function/task bodies
-            if in_clocking or in_modport or in_struct or in_function_or_task:
+            # Track class / module parameter port list #(...)
+            if re.search(r"\b(class|module|interface)\s+.*#\(", stripped) and not stripped.endswith(";"):
+                in_param_header = True
+                continue
+            if in_param_header:
+                if ";" in stripped:
+                    in_param_header = False
                 continue
 
-            # Skip typedef declarations (handled by ND-011)
-            if stripped.startswith("typedef"):
+            # Skip documentation requirements inside clocking, modport, struct/union/enum structures, function/task bodies, or parameter lists
+            if in_clocking or in_modport or in_struct or in_function_or_task or in_param_header:
+                continue
+
+            # Skip typedef declarations (handled by ND-011) and return statements
+            if stripped.startswith("typedef") or stripped.startswith(("return ", "return;", "return(")):
                 continue
 
             # Skip non-variable SystemVerilog construct keywords

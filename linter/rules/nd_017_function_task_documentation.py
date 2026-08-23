@@ -50,7 +50,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                         name = "new"
                     else:
                         m = re.search(
-                            r"\b(?:extern\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(?:function|task)\s+(?:automatic\s+)?(?:void\s+|[\w:<>\[\]\$]+\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)",
+                            r"\b(?:extern\s+|external\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(?:function|task)(?:\s+automatic)?(?:\s+(?:void|(?:[\w:<>\$]+(?:\s*\[[^\]]+\])*)|\s*(?:\[[^\]]+\])))?\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)",
                             text
                         )
                         if m:
@@ -66,7 +66,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                     if name:
                         line = self._node_start_line(node, file_content, context)
                         comments = self._comments_before_node(node, file_content, context)
-                        if not comments or not any(kind in c.lower() for c in comments):
+                        if not comments or not any(re.search(rf'\b{kind}\s*:', c, re.I) for c in comments):
                             violations.append(
                                 self.create_violation(
                                     file_path=file_path,
@@ -80,7 +80,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                                 lines_in_comment = comment_text.splitlines()
                                 for idx, cline in enumerate(lines_in_comment):
                                     if cline.strip().startswith("Parameters:"):
-                                        if idx + 1 < len(lines_in_comment) and not re.search(r"-\s*\w+", lines_in_comment[idx+1]):
+                                        if idx + 1 < len(lines_in_comment) and not re.search(r"-\s*\S+", lines_in_comment[idx+1]):
                                             violations.append(
                                                 self.create_violation(
                                                     file_path=file_path,
@@ -112,7 +112,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                 continue
 
             match = re.match(
-                r"^\s*(?:extern\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(function|task)\s+(?:automatic\s+)?(?:void\s+|[\w:<>\[\]\$]+\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)",
+                r"^\s*(?:extern\s+|external\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(function|task)(?:\s+automatic)?(?:\s+(?:void|(?:[\w:<>\$]+(?:\s*\[[^\]]+\])*)|\s*(?:\[[^\]]+\])))?\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)",
                 line
             )
             if match:
@@ -120,7 +120,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                 func_name = match.group(2)
                 
                 comments = self._extract_comments_from_text(file_content, i + 1)
-                if not comments or not any(kind in c.lower() for c in comments):
+                if not comments or not any(re.search(rf'\b{kind}\s*:', c, re.I) for c in comments):
                     violations.append(
                         self.create_violation(
                             file_path=file_path,
@@ -134,7 +134,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                         lines_in_comment = comment_text.splitlines()
                         for idx, cline in enumerate(lines_in_comment):
                             if cline.strip().startswith("Parameters:"):
-                                if idx + 1 < len(lines_in_comment) and not re.search(r"-\s*\w+", lines_in_comment[idx+1]):
+                                if idx + 1 < len(lines_in_comment) and not re.search(r"-\s*\S+", lines_in_comment[idx+1]):
                                     violations.append(
                                         self.create_violation(
                                             file_path=file_path,

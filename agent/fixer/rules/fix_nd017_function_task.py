@@ -3,30 +3,17 @@
 import re
 from typing import List, Dict, Any, Optional
 from agent.fixer.base_fixer import BaseFixer, FixProposal
-from agent.fixer.doc_helper import build_naturaldocs_comment
+from agent.fixer.doc_helper import (
+    build_naturaldocs_comment,
+    extract_name_from_violation,
+    extract_function_params,
+    build_parameters_block,
+)
 
 _SIG_RE = re.compile(
-    r'\b(function|task)\s+(?:automatic\s+)?(?:\w+\s+)?(\w+)\s*[;(]',
+    r'\b(?:extern\s+|external\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(function|task)(?:\s+automatic)?(?:\s+(?:void|(?:[\w:<>\$]+(?:\s*\[[^\]]+\])*)|\s*(?:\[[^\]]+\])))?\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)',
     re.IGNORECASE,
 )
-_PARAM_RE = re.compile(r'\(([^)]*)\)')
-
-
-def _extract_params(line: str) -> List[str]:
-    """Extract parameter names from a single-line signature."""
-    m = _PARAM_RE.search(line)
-    if not m or not m.group(1).strip():
-        return []
-    params = []
-    for part in m.group(1).split(','):
-        part = part.strip()
-        if not part:
-            continue
-        tokens = re.split(r'[\s=]', part)
-        tokens = [t for t in tokens if t]
-        if tokens:
-            params.append(tokens[-1])
-    return params
 
 
 class FixNd017(BaseFixer):
@@ -46,25 +33,26 @@ class FixNd017(BaseFixer):
         line = source_lines[line_idx]
         indent = line[: len(line) - len(line.lstrip())]
 
+        # 1. First priority: Extract the AST-derived name from the linter violation message
+        kw = None
+        name = extract_name_from_violation(violation)
+        msg = violation.get("message", "")
+        if msg:
+            m_msg = re.search(r"\b(Function|Task)\s+'([^']+)'", msg, re.IGNORECASE)
+            if m_msg:
+                kw = m_msg.group(1).capitalize()
+                if not name:
+                    name = m_msg.group(2)
+
+        # 2. Fallback: Parse line signature using comprehensive SystemVerilog regex
         m = _SIG_RE.search(line)
-        kw = m.group(1).capitalize() if m else "Function"
-        name = m.group(2) if m else "item"
+        if not kw:
+            kw = m.group(1).capitalize() if m else "Function"
+        if not name or name == "item":
+            name = m.group(2) if m else "item"
 
-        # Try to parse parameters from same line or next if unclosed
-        sig_line = line
-        if '(' in line and ')' not in line:
-            for extra_idx in range(line_idx + 1, min(line_idx + 10, len(source_lines))):
-                sig_line += source_lines[extra_idx]
-                if ')' in source_lines[extra_idx]:
-                    break
-
-        params = _extract_params(sig_line)
-        param_lines = []
-        if params:
-            param_lines.append(f"{indent}//\n")
-            param_lines.append(f"{indent}// Parameters:\n")
-            for p in params:
-                param_lines.append(f"{indent}//   {p} - <description>\n")
+        params = extract_function_params(line, source_lines, line_idx)
+        param_lines = build_parameters_block(params, indent)
 
         doc_comment, llm_generated = build_naturaldocs_comment(
             tag=kw,
