@@ -3,7 +3,14 @@
 import re
 from typing import List, Dict, Any, Optional
 from agent.fixer.base_fixer import BaseFixer, FixProposal
-from agent.fixer.doc_helper import extract_comment_from_context
+from agent.fixer.doc_helper import (
+    extract_comment_from_context,
+    extract_function_params,
+    build_parameters_block,
+    extract_construct_params_and_ports,
+    build_construct_extra_lines,
+    build_ports_block,
+)
 from agent.llm.skill_loader import load_skill
 
 _KW_RE = re.compile(
@@ -79,16 +86,47 @@ Output ONLY a single comment line starting with `// `, e.g. `// Description of {
                 except Exception:
                     pass
 
+        # 2. Check if the underlying construct has parameters or ports that should be documented
+        existing_has_params = False
+        existing_has_ports = False
+        code_idx = line_idx + 1
+        while code_idx < len(source_lines):
+            cline = source_lines[code_idx].strip()
+            if cline.startswith("//") or cline.startswith("/*") or cline.startswith("*"):
+                if "parameters:" in cline.lower():
+                    existing_has_params = True
+                if "ports:" in cline.lower():
+                    existing_has_ports = True
+                code_idx += 1
+            elif cline == "":
+                code_idx += 1
+            else:
+                break
+
+        extra_lines = []
+        if code_idx < len(source_lines):
+            code_line = source_lines[code_idx]
+            if kind in ("function", "task") and not existing_has_params:
+                params = extract_function_params(code_line, source_lines, code_idx)
+                extra_lines = build_parameters_block(params, indent)
+            elif kind in ("class", "module", "interface", "checker", "program"):
+                c_params, c_ports = extract_construct_params_and_ports(code_line, source_lines, code_idx)
+                p_lines = build_parameters_block(c_params, indent) if not existing_has_params and c_params else []
+                po_lines = build_ports_block(c_ports, indent) if not existing_has_ports and c_ports else []
+                extra_lines = p_lines + po_lines
+
         target_line = violation["line"] + 1
         if target_line > len(source_lines) + 1:
             target_line = len(source_lines) + 1
+
+        patch_lines = [desc_line] + extra_lines
 
         return FixProposal(
             rule_id="ND-012",
             file=violation["file"],
             line=target_line,
             description=f"Insert description comment for {kind} '{name}'",
-            patch_lines=[desc_line],
+            patch_lines=patch_lines,
             replace_line=None,
             is_safe=True,
             llm_generated=llm_generated,

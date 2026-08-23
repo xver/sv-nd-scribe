@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 from agent.fixer.base_fixer import BaseFixer, FixProposal
 from agent.fixer.doc_helper import build_naturaldocs_comment, extract_name_from_violation
 
-_RE = re.compile(r'(\w+)\s*:\s*coverpoint\b')
+_RE = re.compile(r'(?:([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*)?coverpoint\s+([a-zA-Z_][a-zA-Z0-9_]*)')
 
 
 class FixNd022(BaseFixer):
@@ -29,12 +29,12 @@ class FixNd022(BaseFixer):
         if not name:
             m = _RE.search(line)
             if m:
-                name = m.group(1)
+                name = m.group(1) if m.group(1) else m.group(2)
             elif line.strip() == "" and line_idx + 1 < len(source_lines):
                 next_line = source_lines[line_idx + 1]
                 m = _RE.search(next_line)
                 if m:
-                    name = m.group(1)
+                    name = m.group(1) if m.group(1) else m.group(2)
 
         if not name:
             name = "item"

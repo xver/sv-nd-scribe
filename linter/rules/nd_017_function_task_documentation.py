@@ -1,3 +1,4 @@
+from agent.fixer.doc_helper import extract_function_params
 # Copyright (c) 2026 IC Verimeter. All rights reserved.
 # Licensed under the MIT License. See LICENSE in the project root for details.
 
@@ -76,7 +77,18 @@ class FunctionTaskDocumentationRule(BaseRule):
                             )
                         else:
                             comment_text = "\n".join(comments)
-                            if "Parameters:" in comment_text or "Returns:" in comment_text:
+                            src_lines = file_content.splitlines()
+                            line_zero_idx = max(0, min(len(src_lines) - 1, line - 1))
+                            fn_params = extract_function_params(src_lines[line_zero_idx], src_lines, line_zero_idx)
+                            if fn_params and "parameters:" not in comment_text.lower():
+                                violations.append(
+                                    self.create_violation(
+                                        file_path=file_path,
+                                        line=line,
+                                        message=f"Function/Task '{name}' has parameters but is missing a 'Parameters:' section."
+                                    )
+                                )
+                            elif "Parameters:" in comment_text or "Returns:" in comment_text:
                                 lines_in_comment = comment_text.splitlines()
                                 for idx, cline in enumerate(lines_in_comment):
                                     if cline.strip().startswith("Parameters:"):
@@ -130,7 +142,16 @@ class FunctionTaskDocumentationRule(BaseRule):
                     )
                 else:
                     comment_text = "\n".join(comments)
-                    if "Parameters:" in comment_text or "Returns:" in comment_text:
+                    fn_params = extract_function_params(lines[i], lines, i)
+                    if fn_params and "parameters:" not in comment_text.lower():
+                        violations.append(
+                            self.create_violation(
+                                file_path=file_path,
+                                line=i + 1,
+                                message=f"Function/Task '{func_name}' has parameters but is missing a 'Parameters:' section."
+                            )
+                        )
+                    elif "Parameters:" in comment_text or "Returns:" in comment_text:
                         lines_in_comment = comment_text.splitlines()
                         for idx, cline in enumerate(lines_in_comment):
                             if cline.strip().startswith("Parameters:"):

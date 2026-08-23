@@ -73,6 +73,7 @@ class IdentifierMatchRule(BaseRule):
             "kFunctionDeclaration": ("function", FUNC_KEYWORDS, r"\bfunction\s+(?:automatic\s+)?(?:void\s+|[\w:<>\[\]]+\s+)?([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kTaskDeclaration": ("task", TASK_KEYWORDS, r"\btask\s+(?:automatic\s+)?([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kCovergroupDeclaration": ("covergroup", ["Covergroup", "covergroup"], r"\bcovergroup\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
+            "kCoveragePoint": ("coverpoint", ["Coverpoint", "coverpoint"], r"(?:([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*)?coverpoint\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kCheckerDeclaration": ("checker", ["Checker", "checker"], r"\bchecker\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kClockingDeclaration": ("clocking", ["Clocking", "clocking"], r"\bclocking\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kModportDeclaration": ("modport", ["Modport", "modport"], r"\bmodport\s+([a-zA-Z_][a-zA-Z0-9_]*)"),

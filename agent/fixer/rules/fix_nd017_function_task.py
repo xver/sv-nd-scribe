@@ -46,13 +46,37 @@ class FixNd017(BaseFixer):
 
         # 2. Fallback: Parse line signature using comprehensive SystemVerilog regex
         m = _SIG_RE.search(line)
-        if not kw:
-            kw = m.group(1).capitalize() if m else "Function"
         if not name or name == "item":
             name = m.group(2) if m else "item"
+        if name and name.lower() == "new":
+            kw = "Function"
+        elif not kw:
+            kw = m.group(1).capitalize() if m else "Function"
 
         params = extract_function_params(line, source_lines, line_idx)
         param_lines = build_parameters_block(params, indent)
+
+        # Check if there is already a // Function: / // Task: comment block above line_idx
+        has_existing_header = False
+        for k in range(line_idx - 1, -1, -1):
+            prev_line = source_lines[k].strip()
+            if prev_line.startswith("// Function:") or prev_line.startswith("// Task:") or prev_line.startswith("// function:") or prev_line.startswith("// task:"):
+                has_existing_header = True
+                break
+            elif not prev_line.startswith("//") and not prev_line.startswith("/*") and not prev_line.startswith("*"):
+                break
+
+        if has_existing_header:
+            return FixProposal(
+                rule_id="ND-017",
+                file=violation["file"],
+                line=violation["line"],
+                description=f"Insert Parameters section for {kw.lower()} '{name}'",
+                patch_lines=param_lines,
+                replace_line=None,
+                is_safe=True,
+                llm_generated=False,
+            )
 
         doc_comment, llm_generated = build_naturaldocs_comment(
             tag=kw,

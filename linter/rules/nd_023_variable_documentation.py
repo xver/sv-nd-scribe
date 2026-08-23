@@ -87,6 +87,8 @@ class VariableDocumentationRule(BaseRule):
         in_struct = False
         in_function_or_task = False
         in_param_header = False
+        in_covergroup = False
+        in_constraint = False
 
         for i, line in enumerate(lines):
             stripped = line.strip()
@@ -129,6 +131,25 @@ class VariableDocumentationRule(BaseRule):
                     in_modport = False
                 continue
 
+            # Track covergroup scope
+            if re.search(r"\bcovergroup\b", stripped):
+                if not stripped.endswith(";"):
+                    in_covergroup = True
+                continue
+            if in_covergroup:
+                if stripped.startswith("endgroup"):
+                    in_covergroup = False
+                continue
+
+            # Track constraint scope
+            if re.search(r"\bconstraint\b", stripped) and "{" in stripped and not stripped.endswith("};"):
+                in_constraint = True
+                continue
+            if in_constraint:
+                if "}" in stripped:
+                    in_constraint = False
+                continue
+
             # Track class / module parameter port list #(...)
             if re.search(r"\b(class|module|interface)\s+.*#\(", stripped) and not stripped.endswith(";"):
                 in_param_header = True
@@ -138,8 +159,8 @@ class VariableDocumentationRule(BaseRule):
                     in_param_header = False
                 continue
 
-            # Skip documentation requirements inside clocking, modport, struct/union/enum structures, function/task bodies, or parameter lists
-            if in_clocking or in_modport or in_struct or in_function_or_task or in_param_header:
+            # Skip documentation requirements inside clocking, modport, struct/union/enum structures, function/task bodies, covergroups, constraints, or parameter lists
+            if in_clocking or in_modport or in_struct or in_function_or_task or in_param_header or in_covergroup or in_constraint:
                 continue
 
             # Skip typedef declarations (handled by ND-011) and return statements
