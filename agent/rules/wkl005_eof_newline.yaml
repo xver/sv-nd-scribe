@@ -1,0 +1,6 @@
+rule_id: "WKL-005"
+description: "EOF newline adjustment"
+fixer_class: "agent.fixer.rules.fix_wkl005_eof_newline.FixWkl005"
+skill: "triage"
+safety: safe
+batch_eligible: true

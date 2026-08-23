@@ -1,0 +1,4 @@
+
+class a;
+  int his_is_a_very_long_line_that_definitely_exceeds_the_eighty_character_limit_specified_by_wkl_007_tail________________tail
+endclass 

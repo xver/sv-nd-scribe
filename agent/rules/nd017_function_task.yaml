@@ -1,0 +1,6 @@
+rule_id: "ND-017"
+description: "Function or task documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd017_function_task.FixNd017"
+skill: "function_task"
+safety: safe
+batch_eligible: true

@@ -1,0 +1,6 @@
+rule_id: "WKL-007"
+description: "Line length limit"
+fixer_class: "agent.fixer.rules.fix_wkl007_line_length.FixWkl007"
+skill: "triage"
+safety: unsafe
+batch_eligible: false

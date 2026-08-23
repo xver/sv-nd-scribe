@@ -1,0 +1,6 @@
+rule_id: "WKL-001"
+description: "Class member variable name prefix m_"
+fixer_class: "agent.fixer.rules.fix_wkl001_class_member_prefix.FixWkl001"
+skill: "triage"
+safety: unsafe
+batch_eligible: false

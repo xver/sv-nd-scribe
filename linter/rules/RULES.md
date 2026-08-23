@@ -16,6 +16,7 @@ Style and formatting rules that apply to all SystemVerilog files.
 | WKL-006  | ERROR       | Lines must not contain trailing whitespace. |
 | WKL-007  | **WARNING** | Lines must not exceed the maximum allowed length (default: 120 characters). |
 | WKL-008  | ERROR       | Tab characters (`\t`) are not allowed; use spaces instead. |
+| WKL-009  | ERROR       | Each data/net declaration statement must declare only one variable. |
 
 ## NaturalDocs Rules (ND)
 
@@ -52,6 +53,6 @@ Documentation rules that enforce [NaturalDocs](https://www.naturaldocs.org/) com
 | ND-027   | ERROR    | Procedural blocks (`initial`, `always`, `always_ff`, etc.) must be preceded by a NaturalDocs comment. |
 | ND-028   | ERROR    | Continuous assignments (`assign`) must be preceded by a NaturalDocs comment. |
 | ND-029   | ERROR    | Program declarations must be preceded by a NaturalDocs comment. |
-| ND-030   | ERROR    | Extern method implementations (out-of-body definitions) must be preceded by a NaturalDocs comment. |
+| ND-030   | *(Disabled)* | *(Deprecated) Method documentation belongs on declarations inside class bodies, not out-of-body implementations.* |
 | ND-031   | ERROR    | Clocking block declarations must be preceded by a `// Clocking: <name>` NaturalDocs comment. |
 | ND-032   | ERROR    | Modport declarations must be preceded by a `// Modport: <name>` NaturalDocs comment. |

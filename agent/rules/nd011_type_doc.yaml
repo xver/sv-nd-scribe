@@ -1,0 +1,8 @@
+rule_id: "ND-011"
+description: "Typedef documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd011_type_doc.FixNd011"
+skill: "type_doc"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Type"

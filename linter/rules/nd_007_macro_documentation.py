@@ -35,9 +35,13 @@ class MacroDocumentationRule(BaseRule):
                     continue
                 macro_name = parts[1].split("(")[0].strip()
                 
-                # Exclude include guard defines (e.g. filename upper)
+                # Exclude include guard defines (e.g. preceded by `ifndef or matching filename guard)
+                if i > 0 and lines[i-1].strip().startswith("`ifndef"):
+                    continue
                 file_guard = file_path.replace("\\", "/").split("/")[-1].replace(".", "_").upper()
-                if macro_name.upper() == file_guard:
+                if not file_guard.endswith("_SV") and not file_guard.endswith("_SVH"):
+                    file_guard += "_SV"
+                if macro_name.upper() == file_guard or macro_name.upper() == file_path.replace("\\", "/").split("/")[-1].replace(".", "_").upper():
                     continue
                 
                 # Check preceding comments

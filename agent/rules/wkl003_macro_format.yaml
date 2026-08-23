@@ -1,0 +1,6 @@
+rule_id: "WKL-003"
+description: "Macro UPPER_SNAKE_CASE naming"
+fixer_class: "agent.fixer.rules.fix_wkl003_macro_format.FixWkl003"
+skill: "triage"
+safety: unsafe
+batch_eligible: false

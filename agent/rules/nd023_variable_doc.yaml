@@ -1,0 +1,8 @@
+rule_id: "ND-023"
+description: "Variable documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd023_variable_doc.FixNd023"
+skill: "variable_doc"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Variable"

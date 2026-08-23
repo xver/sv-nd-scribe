@@ -1,0 +1,6 @@
+rule_id: "WKL-002"
+description: "Typedef name suffix _t"
+fixer_class: "agent.fixer.rules.fix_wkl002_typedef_suffix.FixWkl002"
+skill: "triage"
+safety: unsafe
+batch_eligible: false

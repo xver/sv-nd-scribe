@@ -1,0 +1,15 @@
+{
+  "_comment": "Copy to agent_config.json and edit values. All fields are optional.",
+  "agent": {
+    "backup": "auto",
+    "llm_provider": "none",
+    "llm_model": "gpt-4o",
+    "llm_temperature": 0.2,
+    "llm_timeout_sec": 30,
+    "header_defaults": {
+      "company": "IC Verimeter",
+      "author": "icshunt.help@gmail.com",
+      "legal": "Licensed under the MIT License. See LICENSE in the project root for details."
+    }
+  }
+}

@@ -27,57 +27,79 @@ class FunctionTaskDocumentationRule(BaseRule):
         violations = []
 
         # AST node driven check
-        fn_nodes = self._find_tree_nodes_by_tag(context, "kFunctionDeclaration")
-        task_nodes = self._find_tree_nodes_by_tag(context, "kTaskDeclaration")
-        nodes = fn_nodes + task_nodes
+        fn_tags = [
+            "kFunctionDeclaration", "kTaskDeclaration",
+            "kFunctionPrototype", "kTaskPrototype",
+            "kClassConstructorDeclaration", "kClassConstructorPrototype",
+            "kMethodDeclaration", "kMethodPrototype",
+        ]
+        has_ast = False
+        for tag in fn_tags:
+            nodes = self._find_tree_nodes_by_tag(context, tag)
+            if nodes:
+                has_ast = True
+                for node in nodes:
+                    text = getattr(node, 'text', '') or ""
+                    # Skip out-of-class extern method implementations (e.g. Class::method)
+                    if "::" in text or re.search(r"(function|task)\s+(?:[a-zA-Z_0-9_\[\]:]+\s+)?\w+::\w+", text):
+                        continue
 
-        if nodes:
-            for node in nodes:
-                text = getattr(node, 'text', '') or ""
-                # Skip out-of-class extern method implementations (handled by ND-030)
-                if "::" in text or re.search(r"(function|task)\s+(?:[a-zA-Z_0-9_\[\]:]+\s+)?\w+::\w+", text):
-                    continue
-
-                kind = "function" if getattr(node, 'tag', '') == "kFunctionDeclaration" else "task"
-                name = ""
-                if hasattr(node, 'find_all'):
-                    try:
-                        id_nodes = list(node.find_all(lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'))
-                        if id_nodes:
-                            name = id_nodes[0].text
-                    except Exception:
-                        pass
-                if not name:
-                    m = re.search(r"(function|task)\s+(?:automatic\s+)?(?:[a-zA-Z_0-9_\[\]:]+\s+)?([a-zA-Z_][a-zA-Z0-9_]*)", text)
-                    if m:
-                        name = m.group(2)
-
-                if name:
-                    line = self._node_start_line(node, file_content, context)
-                    comments = self._comments_before_node(node, file_content, context)
-                    if not comments or not any(kind in c.lower() for c in comments):
-                        violations.append(
-                            self.create_violation(
-                                file_path=file_path,
-                                line=line,
-                                message=f"{kind.capitalize()} '{name}' is missing a NaturalDocs comment ('// {kind.capitalize()}: {name}')."
-                            )
-                        )
+                    kind = "task" if "task" in tag.lower() or re.search(r"\btask\b", text) else "function"
+                    name = ""
+                    if "Constructor" in tag or re.search(r"\bfunction\s+(?:automatic\s+)?new\b", text):
+                        name = "new"
                     else:
-                        comment_text = "\n".join(comments)
-                        if "Parameters:" in comment_text or "Returns:" in comment_text:
-                            lines_in_comment = comment_text.splitlines()
-                            for idx, cline in enumerate(lines_in_comment):
-                                if cline.strip().startswith("Parameters:") or cline.strip().startswith("Returns:"):
-                                    if idx + 1 < len(lines_in_comment) and not re.search(r"-\s*\w+", lines_in_comment[idx+1]):
-                                        violations.append(
-                                            self.create_violation(
-                                                file_path=file_path,
-                                                line=line,
-                                                message=f"Function/Task '{name}' has improper parameters or returns section formatting."
+                        m = re.search(
+                            r"\b(?:extern\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(?:function|task)\s+(?:automatic\s+)?(?:void\s+|[\w:<>\[\]\$]+\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)",
+                            text
+                        )
+                        if m:
+                            name = m.group(1)
+                        elif hasattr(node, 'find_all'):
+                            try:
+                                id_nodes = list(node.find_all(lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'))
+                                if id_nodes:
+                                    name = id_nodes[-1].text
+                            except Exception:
+                                pass
+
+                    if name:
+                        line = self._node_start_line(node, file_content, context)
+                        comments = self._comments_before_node(node, file_content, context)
+                        if not comments or not any(kind in c.lower() for c in comments):
+                            violations.append(
+                                self.create_violation(
+                                    file_path=file_path,
+                                    line=line,
+                                    message=f"{kind.capitalize()} '{name}' is missing a NaturalDocs comment ('// {kind.capitalize()}: {name}')."
+                                )
+                            )
+                        else:
+                            comment_text = "\n".join(comments)
+                            if "Parameters:" in comment_text or "Returns:" in comment_text:
+                                lines_in_comment = comment_text.splitlines()
+                                for idx, cline in enumerate(lines_in_comment):
+                                    if cline.strip().startswith("Parameters:"):
+                                        if idx + 1 < len(lines_in_comment) and not re.search(r"-\s*\w+", lines_in_comment[idx+1]):
+                                            violations.append(
+                                                self.create_violation(
+                                                    file_path=file_path,
+                                                    line=line,
+                                                    message=f"Function/Task '{name}' has improper parameters section formatting."
+                                                )
                                             )
-                                        )
-                                        break
+                                            break
+                                    elif cline.strip().startswith("Returns:"):
+                                        if idx + 1 >= len(lines_in_comment) or not lines_in_comment[idx+1].strip():
+                                            violations.append(
+                                                self.create_violation(
+                                                    file_path=file_path,
+                                                    line=line,
+                                                    message=f"Function/Task '{name}' has improper returns section formatting."
+                                                )
+                                            )
+                                            break
+        if has_ast:
             return violations
 
         # Fallback text parsing
@@ -85,7 +107,14 @@ class FunctionTaskDocumentationRule(BaseRule):
         for i, line in enumerate(lines):
             if "::" in line:
                 continue
-            match = re.match(r"^\s*(?:extern\s+)?(?:virtual\s+)?(?:protected\s+)?(function|task)\s+(?:automatic\s+)?(?:[a-zA-Z_0-9_\[\]:]+\s+)?([a-zA-Z_][a-zA-Z0-9_]*)", line)
+            stripped = line.strip()
+            if stripped.startswith("//") or stripped.startswith("/*") or stripped.startswith("*"):
+                continue
+
+            match = re.match(
+                r"^\s*(?:extern\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(function|task)\s+(?:automatic\s+)?(?:void\s+|[\w:<>\[\]\$]+\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)",
+                line
+            )
             if match:
                 kind = match.group(1)
                 func_name = match.group(2)
@@ -104,13 +133,23 @@ class FunctionTaskDocumentationRule(BaseRule):
                     if "Parameters:" in comment_text or "Returns:" in comment_text:
                         lines_in_comment = comment_text.splitlines()
                         for idx, cline in enumerate(lines_in_comment):
-                            if cline.strip().startswith("Parameters:") or cline.strip().startswith("Returns:"):
+                            if cline.strip().startswith("Parameters:"):
                                 if idx + 1 < len(lines_in_comment) and not re.search(r"-\s*\w+", lines_in_comment[idx+1]):
                                     violations.append(
                                         self.create_violation(
                                             file_path=file_path,
                                             line=i + 1,
-                                            message=f"Function/Task '{func_name}' has improper parameters or returns section formatting."
+                                            message=f"Function/Task '{func_name}' has improper parameters section formatting."
+                                        )
+                                    )
+                                    break
+                            elif cline.strip().startswith("Returns:"):
+                                if idx + 1 >= len(lines_in_comment) or not lines_in_comment[idx+1].strip():
+                                    violations.append(
+                                        self.create_violation(
+                                            file_path=file_path,
+                                            line=i + 1,
+                                            message=f"Function/Task '{func_name}' has improper returns section formatting."
                                         )
                                     )
                                     break

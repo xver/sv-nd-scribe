@@ -47,7 +47,7 @@ class InterfaceDocumentationRule(BaseRule):
                 if intf_name:
                     line = self._node_start_line(node, file_content, context)
                     comments = self._comments_before_node(node, file_content, context)
-                    if not comments or not any("interface" in c.lower() for c in comments):
+                    if not comments or not any(re.search(r"\binterface\s*:", c, re.IGNORECASE) for c in comments):
                         violations.append(
                             self.create_violation(
                                 file_path=file_path,
@@ -64,7 +64,7 @@ class InterfaceDocumentationRule(BaseRule):
             if match:
                 intf_name = match.group(1)
                 comments = self._extract_comments_from_text(file_content, i + 1)
-                if not comments or not any("interface" in c.lower() for c in comments):
+                if not comments or not any(re.search(r"\binterface\s*:", c, re.IGNORECASE) for c in comments):
                     violations.append(
                         self.create_violation(
                             file_path=file_path,

@@ -1,0 +1,6 @@
+rule_id: "WKL-008"
+description: "No tab characters"
+fixer_class: "agent.fixer.rules.fix_wkl008_no_tabs.FixWkl008"
+skill: "triage"
+safety: safe
+batch_eligible: true

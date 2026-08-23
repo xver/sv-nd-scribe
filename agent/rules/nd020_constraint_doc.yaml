@@ -1,0 +1,8 @@
+rule_id: "ND-020"
+description: "Constraint documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd020_constraint_doc.FixNd020"
+skill: "coverage_doc"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Constraint"

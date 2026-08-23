@@ -1,6 +1,6 @@
 /**
  * SV ND Scribe - VS Code Extension
- * Provides real-time in-editor diagnostics for SystemVerilog files.
+ * Provides real-time in-editor diagnostics and Quick Fix code actions for SystemVerilog files.
  */
 const vscode = require('vscode');
 const child_process = require('child_process');
@@ -8,11 +8,101 @@ const child_process = require('child_process');
 let diagnosticCollection;
 let statusDiagnosticCollection;
 
+// Rules marked unsafe / report-only in agent YAML configs – no actionable
+// auto-fix exists, so we suppress the QuickFix lightbulb for these.
+const UNFIXABLE_RULES = new Set([
+    'WKL-001', // class member prefix  (semantic rename)
+    'WKL-002', // typedef suffix       (semantic rename)
+    'WKL-003', // macro format         (semantic rename)
+    'WKL-004', // interface naming     (semantic rename)
+    'WKL-007', // line length          (structural reflow)
+]);
+
+class SvScribeCodeActionProvider {
+    provideCodeActions(document, range, context, token) {
+        const config = vscode.workspace.getConfiguration('sv-nd-scribe');
+        if (config.get('enableQuickFix') === false) {
+            return [];
+        }
+
+        const actions = [];
+        const seenRules = new Set();
+
+        for (const diagnostic of context.diagnostics) {
+            if (diagnostic.source !== 'sv-nd-scribe') {
+                continue;
+            }
+
+            const rawRuleId = diagnostic.code ? String(diagnostic.code) : '';
+            const cleanRuleId = rawRuleId.replace(/[\[\]]/g, '').trim();
+
+            // Skip rules that have no actionable auto-fix
+            if (UNFIXABLE_RULES.has(cleanRuleId)) {
+                continue;
+            }
+
+            if (cleanRuleId && !seenRules.has(cleanRuleId)) {
+                seenRules.add(cleanRuleId);
+
+                const action = new vscode.CodeAction(
+                    `SV Scribe: Fix [${cleanRuleId}]`,
+                    vscode.CodeActionKind.QuickFix
+                );
+                action.command = {
+                    command: 'sv-nd-scribe.fixRule',
+                    title: `SV Scribe: Fix [${cleanRuleId}]`,
+                    arguments: [document.uri, cleanRuleId]
+                };
+                action.diagnostics = [diagnostic];
+                action.isPreferred = true;
+                actions.push(action);
+            }
+        }
+
+        // If there are diagnostics in the file, also offer "Fix all auto-fixable issues in file"
+        const allDocDiagnostics = diagnosticCollection ? diagnosticCollection.get(document.uri) || [] : [];
+        if (allDocDiagnostics.length > 0) {
+            const fixAllAction = new vscode.CodeAction(
+                'SV Scribe: Fix all auto-fixable issues in file',
+                vscode.CodeActionKind.SourceFixAll
+            );
+            fixAllAction.command = {
+                command: 'sv-nd-scribe.fix',
+                title: 'SV Scribe: Fix all auto-fixable issues in file',
+                arguments: [document.uri]
+            };
+            actions.push(fixAllAction);
+        }
+
+        return actions;
+    }
+}
+
 function activate(context) {
     diagnosticCollection = vscode.languages.createDiagnosticCollection('sv-nd-scribe');
     context.subscriptions.push(diagnosticCollection);
     statusDiagnosticCollection = vscode.languages.createDiagnosticCollection('sv-nd-scribe-status');
     context.subscriptions.push(statusDiagnosticCollection);
+
+    // Register Quick Fix CodeAction Provider
+    const documentSelector = [
+        { language: 'systemverilog', scheme: 'file' },
+        { language: 'verilog', scheme: 'file' },
+        { language: 'systemverilog', scheme: 'untitled' },
+        { language: 'verilog', scheme: 'untitled' }
+    ];
+    context.subscriptions.push(
+        vscode.languages.registerCodeActionsProvider(
+            documentSelector,
+            new SvScribeCodeActionProvider(),
+            {
+                providedCodeActionKinds: [
+                    vscode.CodeActionKind.QuickFix,
+                    vscode.CodeActionKind.SourceFixAll
+                ]
+            }
+        )
+    );
 
     // Lint active editor on startup if one is active
     if (vscode.window.activeTextEditor) {
@@ -93,6 +183,19 @@ function activate(context) {
         })
     );
 
+    // Register fix commands
+    context.subscriptions.push(
+        vscode.commands.registerCommand('sv-nd-scribe.fix', async (targetUri) => {
+            await runFixer(targetUri);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('sv-nd-scribe.fixRule', async (targetUri, ruleId) => {
+            await runFixer(targetUri, ruleId);
+        })
+    );
+
     const getErrorUri = () => {
         if (vscode.window.activeTextEditor) {
             return vscode.window.activeTextEditor.document.uri;
@@ -125,33 +228,21 @@ function activate(context) {
         const diagnostics = [];
 
         const config = vscode.workspace.getConfiguration('sv-nd-scribe');
-        const configuredLinterPath = config.get('linterPath');
         const pythonPath = config.get('pythonPath') || 'python3';
         const linterPath = getLinterPath();
+        const scribeHome = getScribeHome();
 
-        if (!process.env.SVND_SCRIBE_HOME) {
-            if (configuredLinterPath) {
-                const msg = `SV ND Scribe Status: Warning: SVND_SCRIBE_HOME is not set. Using configured path: ${configuredLinterPath}`;
-                if (!isStartup) {
-                    vscode.window.showWarningMessage(msg);
-                }
-                diagnostics.push(new vscode.Diagnostic(
-                    new vscode.Range(0, 0, 0, 100),
-                    msg,
-                    vscode.DiagnosticSeverity.Warning
-                ));
-            } else {
-                const msg = 'SV ND Scribe Status: Error: SVND_SCRIBE_HOME environment variable is missing.';
-                vscode.window.showErrorMessage(msg);
-                diagnostics.push(new vscode.Diagnostic(
-                    new vscode.Range(0, 0, 0, 100),
-                    msg,
-                    vscode.DiagnosticSeverity.Error
-                ));
-                diagnostics.forEach(d => d.source = 'sv-nd-scribe-status');
-                statusDiagnosticCollection.set(getErrorUri(), diagnostics);
-                return;
-            }
+        if (!scribeHome && !process.env.SVND_SCRIBE_HOME) {
+            const msg = 'SV ND Scribe Status: Error: SVND_SCRIBE_HOME could not be resolved.';
+            vscode.window.showErrorMessage(msg);
+            diagnostics.push(new vscode.Diagnostic(
+                new vscode.Range(0, 0, 0, 100),
+                msg,
+                vscode.DiagnosticSeverity.Error
+            ));
+            diagnostics.forEach(d => d.source = 'sv-nd-scribe-status');
+            statusDiagnosticCollection.set(getErrorUri(), diagnostics);
+            return;
         }
 
         if (!linterPath) {
@@ -167,11 +258,7 @@ function activate(context) {
             return;
         }
 
-        const env = { ...process.env };
-        if (!env.SVND_SCRIBE_HOME && linterPath) {
-            const path = require('path');
-            env.SVND_SCRIBE_HOME = path.dirname(path.dirname(linterPath));
-        }
+        const env = getExecutionEnv(scribeHome);
 
         child_process.execFile(pythonPath, [linterPath, '--status'], { env }, (error, stdout, stderr) => {
             if (error) {
@@ -220,9 +307,10 @@ function lintFiles(documents) {
     }
 
     const filePaths = documents.map(doc => doc.uri.fsPath);
+    const env = getExecutionEnv();
     
     // Execute linter process
-    child_process.execFile(pythonPath, [linterPath, ...filePaths], (error, stdout, stderr) => {
+    child_process.execFile(pythonPath, [linterPath, ...filePaths], { env }, (error, stdout, stderr) => {
         const diagnosticsMap = new Map();
         const lines = stdout.split('\n');
         
@@ -282,13 +370,132 @@ function lintFiles(documents) {
     });
 }
 
-function deactivate() {
-    if (diagnosticCollection) {
-        diagnosticCollection.clear();
+async function runFixer(targetUri, ruleId) {
+    let uri = targetUri;
+    if (!uri && vscode.window.activeTextEditor) {
+        uri = vscode.window.activeTextEditor.document.uri;
     }
-    if (statusDiagnosticCollection) {
-        statusDiagnosticCollection.clear();
+    if (!uri) {
+        vscode.window.showInformationMessage('No active SystemVerilog document to fix.');
+        return;
     }
+
+    try {
+        const document = await vscode.workspace.openTextDocument(uri);
+        if (document.isDirty) {
+            await document.save();
+        }
+    } catch (e) {
+        // Document might already be on disk or not loaded
+    }
+
+    const config = vscode.workspace.getConfiguration('sv-nd-scribe');
+    const pythonPath = config.get('pythonPath') || 'python3';
+    const scribeHome = getScribeHome();
+    const env = getExecutionEnv(scribeHome);
+
+    const filePath = uri.fsPath;
+    const args = ['-m', 'agent', filePath, '--batch', '--no-backup'];
+    if (ruleId) {
+        const cleanRuleId = ruleId.replace(/[\[\]]/g, '').trim();
+        args.push('--rules', cleanRuleId);
+    }
+
+    const execOptions = { env };
+    if (scribeHome) {
+        execOptions.cwd = scribeHome;
+    }
+
+    child_process.execFile(pythonPath, args, execOptions, async (error, stdout, stderr) => {
+        // Note: ScribeAgent returns 0 on complete clean or 2 on remaining violations.
+        // Fatal failures exit with other non-zero codes (like 1).
+        if (error && error.code !== 0 && error.code !== 2) {
+            const msg = (stderr && stderr.trim()) || (stdout && stdout.trim()) || error.message;
+            vscode.window.showErrorMessage(`SV Scribe Fix Error: ${msg}`);
+            return;
+        }
+
+        try {
+            // Reload the document directly from disk so VS Code synchronizes
+            // without marking the buffer dirty or triggering a file save conflict.
+            const activeEditor = vscode.window.activeTextEditor;
+            if (activeEditor && activeEditor.document.uri.toString() === uri.toString()) {
+                await vscode.commands.executeCommand('workbench.action.files.revert');
+                lintDocument(activeEditor.document);
+            } else {
+                const doc = await vscode.workspace.openTextDocument(uri);
+                lintDocument(doc);
+            }
+        } catch (e) {
+            // Fallback: re-lint open document
+            const targetDoc = vscode.workspace.textDocuments.find(d => d.uri.toString() === uri.toString());
+            if (targetDoc) {
+                lintDocument(targetDoc);
+            }
+        }
+
+        const ruleDesc = ruleId ? `rule [${ruleId.replace(/[\[\]]/g, '')}]` : 'auto-fixable issues';
+        vscode.window.setStatusBarMessage(`SV Scribe: Applied fix for ${ruleDesc}`, 4000);
+    });
+}
+
+function getExecutionEnv(providedHome) {
+    const config = vscode.workspace.getConfiguration('sv-nd-scribe');
+    const customEnv = config.get('env') || {};
+    const path = require('path');
+    
+    const env = { ...process.env };
+    const scribeHome = providedHome || getScribeHome();
+    
+    if (scribeHome) {
+        env.SVND_SCRIBE_HOME = scribeHome;
+        env.PYTHONPATH = scribeHome + (process.env.PYTHONPATH ? path.delimiter + process.env.PYTHONPATH : '');
+        env.SV_ND_SCRIBE_PROJECT_CONFIG = path.join(scribeHome, 'linter', 'configs');
+    }
+    
+    // Apply user-specified custom env entries with ${workspaceFolder} substitution
+    for (const [key, value] of Object.entries(customEnv)) {
+        if (value !== undefined && value !== null) {
+            let strVal = String(value);
+            if (scribeHome) {
+                strVal = strVal.replace(/\${workspaceFolder}/g, scribeHome);
+            }
+            env[key] = strVal;
+        }
+    }
+    
+    return env;
+}
+
+function getScribeHome() {
+    const config = vscode.workspace.getConfiguration('sv-nd-scribe');
+    const configuredAgent = config.get('agentPath');
+    const path = require('path');
+    const fs = require('fs');
+
+    if (configuredAgent && fs.existsSync(configuredAgent)) {
+        try {
+            const stat = fs.statSync(configuredAgent);
+            return stat.isDirectory() ? configuredAgent : path.dirname(path.dirname(configuredAgent));
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    const linterPath = getLinterPath();
+    if (linterPath) {
+        return path.dirname(path.dirname(linterPath));
+    }
+
+    if (process.env.SVND_SCRIBE_HOME) {
+        return process.env.SVND_SCRIBE_HOME;
+    }
+
+    if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+        return vscode.workspace.workspaceFolders[0].uri.fsPath;
+    }
+
+    return null;
 }
 
 function getLinterPath() {
@@ -301,7 +508,18 @@ function getLinterPath() {
     return linterPath;
 }
 
+function deactivate() {
+    if (diagnosticCollection) {
+        diagnosticCollection.clear();
+    }
+    if (statusDiagnosticCollection) {
+        statusDiagnosticCollection.clear();
+    }
+}
+
 module.exports = {
     activate,
-    deactivate
+    deactivate,
+    SvScribeCodeActionProvider
 };
+

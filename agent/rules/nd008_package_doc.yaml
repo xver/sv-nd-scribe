@@ -1,0 +1,8 @@
+rule_id: "ND-008"
+description: "Package documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd008_package_doc.FixNd008"
+skill: "type_doc"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Package"

@@ -1,0 +1,8 @@
+rule_id: "ND-009"
+description: "Class documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd009_class.FixNd009"
+skill: "nd_comment"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Class"

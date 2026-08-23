@@ -26,7 +26,11 @@ class DocumentedStatementRule(BaseRule):
         violations = []
 
         # AST node driven check
-        tags = ["kClassDeclaration", "kPackageDeclaration", "kInterfaceDeclaration", "kModuleDeclaration", "kFunctionDeclaration", "kTaskDeclaration"]
+        tags = [
+            "kClassDeclaration", "kPackageDeclaration", "kInterfaceDeclaration", "kModuleDeclaration",
+            "kFunctionDeclaration", "kTaskDeclaration", "kFunctionPrototype", "kTaskPrototype",
+            "kClassConstructorDeclaration", "kClassConstructorPrototype"
+        ]
         has_ast = False
         for tag in tags:
             nodes = self._find_tree_nodes_by_tag(context, tag)
@@ -35,7 +39,7 @@ class DocumentedStatementRule(BaseRule):
                 for node in nodes:
                     text = getattr(node, 'text', '') or ""
                     first_l = text.splitlines()[0].strip() if text else tag
-                    if tag in ["kFunctionDeclaration", "kTaskDeclaration"] and "::" in first_l:
+                    if tag in ["kFunctionDeclaration", "kTaskDeclaration", "kFunctionPrototype", "kTaskPrototype", "kClassConstructorDeclaration", "kClassConstructorPrototype"] and "::" in first_l:
                         continue
 
                     comment_lines = self._comments_before_node(node, file_content, context)
@@ -55,7 +59,12 @@ class DocumentedStatementRule(BaseRule):
         lines = file_content.splitlines()
         for i, line_str in enumerate(lines):
             stripped = line_str.strip()
-            if any(stripped.startswith(kw) for kw in ["class ", "package ", "interface ", "module ", "function ", "task "]):
+            if any(stripped.startswith(kw) for kw in [
+                "class ", "package ", "interface ", "module ", "function ", "task ",
+                "extern function ", "extern task ", "virtual function ", "virtual task ",
+                "protected function ", "protected task ", "local function ", "local task ",
+                "pure virtual function ", "pure virtual task "
+            ]):
                 if "::" in stripped:
                     continue
                 comments = self._extract_comments_from_text(file_content, i + 1)

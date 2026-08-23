@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "sv-nd-scribe"
+version = "1.0.0"
+description = "SystemVerilog NaturalDocs linter and AI agent"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = [
+    "pyyaml>=6.0",
+]
+
+[project.scripts]
+sv-nd-scribe       = "linter.__main__:main"
+sv-nd-scribe-agent = "agent.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["agent*", "linter*"]
+
+[tool.setuptools.package-data]
+"agent" = ["rules/*.yaml"]
+"" = ["skills/**/*.md"]

@@ -1,0 +1,8 @@
+rule_id: "ND-010"
+description: "Enum documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd010_enum_doc.FixNd010"
+skill: "type_doc"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "enum"

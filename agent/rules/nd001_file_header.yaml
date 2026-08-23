@@ -1,0 +1,6 @@
+rule_id: "ND-001"
+description: "File header comment block"
+fixer_class: "agent.fixer.rules.fix_nd001_file_header.FixNd001"
+skill: "file_header"
+safety: safe
+batch_eligible: true

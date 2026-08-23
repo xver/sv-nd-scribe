@@ -1,0 +1,8 @@
+rule_id: "ND-015"
+description: "Property documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd015_property_doc.FixNd015"
+skill: "assertion_property"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Property"

@@ -15,9 +15,9 @@ Also, check out other open-source projects by IC Verimeter.
 ## Why use sv-nd-scribe?
 
 * **Consistent Documentation**: Enforce NaturalDocs rules across your SystemVerilog files.
-* **Real-time Feedback**: Use the VS Code extension for on-the-fly linting.
+* **Real-time Feedback**: Use the VS Code extension for on-the-fly linting and quick-fixes.
 * **Lightweight & Portable**: Standard Python implementation, fits seamlessly into Makefiles.
-* **AI Assistance**: Planned AI agent to resolve issues and generate missing comments automatically.
+* **AI Assistance**: AI agent with deterministic and LLM-assisted options to resolve issues and generate missing comments automatically.
 
 ---
 
@@ -34,7 +34,7 @@ Also, check out other open-source projects by IC Verimeter.
   - [Option 1: Install from Extension View (TODO)](#option-1-install-from-extension-view-todo)
   - [Option 2: Install from the pre-built .vsix](#option-2-install-from-the-pre-built-vsix)
   - [Extension Configuration](#extension-configuration)
-- [AI Agent](#ai-agent-todo)
+- [AI Agent](#ai-agent)
 - [Support](#support)
 
 ## Prerequisites
@@ -179,6 +179,11 @@ After installation, configure the extension via VS Code Settings (`Ctrl+,`) by s
 | `sv-nd-scribe.linterPath` | `""` | Absolute path to `linter.py`. If empty, it automatically falls back to `$SVND_SCRIBE_HOME/linter/linter.py`. |
 | `sv-nd-scribe.pythonPath` | `python3` | Path to your Python interpreter |
 | `sv-nd-scribe.runOn` | `onSave` | When to trigger linting: `onSave` or `onOpen` |
+| `sv-nd-scribe.agentLlmProvider` | `none` | LLM backend selection for AI quick-fixes (`none`, `openai`, `ollama`) |
+| `sv-nd-scribe.agentLlmModel` | `""` | Model name override (e.g. `llama3.2`, `gpt-4o-mini`) |
+| `sv-nd-scribe.agentFixMode` | `interactive` | Default fix mode for agent command execution (`interactive`, `batch`, `dryRun`) |
+| `sv-nd-scribe.agentBackup` | `auto` | Backup strategy when modifying files (`auto`, `always`, `never`) |
+| `sv-nd-scribe.agentShowDiffPreview` | `true` | Show diff preview panel before applying AI fixes |
 
 ### Extension Commands
 
@@ -188,20 +193,32 @@ In addition to automatically linting in the background, you can manually trigger
 - **`SV_Scribe: Clear`**: Clears any diagnostic underlines from the current document.
 - **`SV_Scribe: Lint_All`**: Runs the linter across every SystemVerilog file you currently have open in your workspace.
 - **`SV_Scribe: Status`** (alias: **`SV_Scribe: Verify linter installation`**): Verifies your environment by checking if the linter script exists and if its dependencies are satisfied.
+- **`SV_Scribe: Fix Current File`**: Runs the AI Agent to analyze and fix issues in the active document.
+- **`SV_Scribe: Batch Fix Current File`**: Applies all safe deterministic fixes to the active document without prompting.
+- **`SV_Scribe: Show Agent Status`**: Displays the AI agent status, backend LLM provider, and loaded rules/skills.
 
-## AI Agent *(TODO)*
+## AI Agent
 
-> **TODO**: This section is planned and not yet implemented.
+The **SV ND Scribe AI Agent** automatically analyzes linter violations and applies or proposes NaturalDocs documentation and formatting fixes directly in SystemVerilog source files. It features a portable, multi-LLM backend (`none`, `openai`, `ollama`) and data-driven rule/skill definitions.
 
-SV ND Scribe includes an AI agent component that will automatically analyze linter violations and suggest or apply fixes directly in your SystemVerilog source files.
+### CLI Usage
 
-**Planned capabilities:**
+```bash
+# Deterministic batch fix (CI mode, no backup files)
+python3 -m agent --llm none --batch --no-backup -f manifest.f
 
-- Parse linter output and triage violations by rule and severity
-- Propose NaturalDocs comment blocks for undocumented constructs
-- Auto-generate missing file headers, group headings, and inline documentation
-- Interactive mode: review and accept/reject each suggested fix
-- Batch mode: apply all safe fixes automatically
+# Check agent connectivity and status
+python3 -m agent --status
+
+# Preview proposed fixes without writing to disk
+python3 -m agent --llm none --dry-run file.sv
+```
+
+### VS Code Quick-Fixes
+
+When editing SystemVerilog files in VS Code, clicking the lightbulb icon (`Ctrl+.`) on any diagnostic presents quick-fixes:
+- **`💡 SV_Scribe: Fix (deterministic)`**: Instantly applies deterministic formatting/comment fixes without calling an LLM.
+- **`🤖 SV_Scribe: Fix with AI (<provider>)`**: Uses configured LLM backend for intelligent description generation.
 
 ## Support
 

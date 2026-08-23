@@ -1,0 +1,6 @@
+rule_id: "ND-024"
+description: "Inline item description comment"
+fixer_class: "agent.fixer.rules.fix_nd024_inline_doc.FixNd024"
+skill: "inline_doc"
+safety: safe
+batch_eligible: true

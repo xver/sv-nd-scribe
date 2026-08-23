@@ -45,6 +45,7 @@ from .wkl_005_eof_empty_line import EOFEmptyLineRule
 from .wkl_006_trailing_whitespace import TrailingWhitespaceRule
 from .wkl_007_line_length import LineLengthRule
 from .wkl_008_no_tabs import NoTabsRule
+from .wkl_009_one_variable_per_declaration import OneVariablePerDeclarationRule
 
 __all__ = [
     "FileHeaderRule",
@@ -87,4 +88,5 @@ __all__ = [
     "TrailingWhitespaceRule",
     "LineLengthRule",
     "NoTabsRule",
+    "OneVariablePerDeclarationRule",
 ]

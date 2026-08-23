@@ -1,0 +1,13 @@
+{
+  "servers": [
+    {
+      "id": "sv-nd-scribe",
+      "name": "SV ND Scribe Agent",
+      "description": "SystemVerilog NaturalDocs linter and auto-fixer. Exposes check, fix, and status tools.",
+      "command": {
+        "type": "stdio",
+        "argv": ["python3", "-m", "agent.mcp_server"]
+      }
+    }
+  ]
+}

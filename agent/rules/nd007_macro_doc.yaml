@@ -1,0 +1,8 @@
+rule_id: "ND-007"
+description: "Macro documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd007_macro_doc.FixNd007"
+skill: "nd_comment"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "define"

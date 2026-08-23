@@ -35,7 +35,7 @@ class VariableDocumentationRule(BaseRule):
                 p = parent
                 while p is not None:
                     tag = getattr(p, 'tag', '')
-                    if tag in {'kClockingDeclaration', 'kModportDeclaration', 'kFunctionDeclaration', 'kTaskDeclaration', 'kClassDeclaration', 'kStructSpecifier', 'kUnionSpecifier', 'kStructUnionMember', 'kDataTypeStruct', 'kDataTypeUnion'}:
+                    if tag in {'kClockingDeclaration', 'kModportDeclaration', 'kFunctionDeclaration', 'kTaskDeclaration', 'kStructSpecifier', 'kUnionSpecifier', 'kStructUnionMember', 'kDataTypeStruct', 'kDataTypeUnion'}:
                         in_excl = True
                         break
                     p = getattr(p, 'parent', None)
@@ -47,9 +47,25 @@ class VariableDocumentationRule(BaseRule):
                 if any(kw in text for kw in ["typedef", "struct", "union", "enum"]):
                     continue
 
-                m = re.search(r"^\s*(?:rand\s+|randc\s+)?(?:logic|bit|int|byte|string|time|real|[a-zA-Z_][a-zA-Z0-9_]*)\s+(?:\[[^\]]+\]\s+)?([a-zA-Z_][a-zA-Z0-9_]*)", text)
-                if m:
-                    var_name = m.group(1)
+                vars_found = []
+                if hasattr(node, 'find_all'):
+                    vars_found = list(node.find_all(
+                        lambda sub: getattr(sub, 'tag', '') in {'kVariableDeclarationAssignment', 'kRegisterVariable', 'kNetVariable'}
+                    ))
+                var_name = None
+                if vars_found:
+                    idents = list(vars_found[0].find_all(lambda sub: getattr(sub, 'tag', '') == 'SymbolIdentifier'))
+                    if idents:
+                        var_name = idents[0].text.strip()
+                if not var_name:
+                    m = re.search(
+                        r"^\s*(?:(?:rand|randc|protected|local|static|const|virtual|automatic)\s+)*"
+                        r"(?:(?:logic|bit|byte|shortint|int|longint|integer|time|shortreal|real|realtime|string|[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*)\s*)"
+                        r"(?:\s*\[[^\]]+\])*\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+                        text.strip()
+                    )
+                    if m:
+                        var_name = m.group(1)
 
                 if var_name and var_name not in ["module", "package", "class", "function", "task", "interface", "covergroup", "checker", "end", "begin", "assign", "property", "clocking", "modport"]:
                     line = self._node_start_line(node, file_content, context)
@@ -69,6 +85,7 @@ class VariableDocumentationRule(BaseRule):
         in_clocking = False
         in_modport = False
         in_struct = False
+        in_function_or_task = False
 
         for i, line in enumerate(lines):
             stripped = line.strip()
@@ -82,6 +99,15 @@ class VariableDocumentationRule(BaseRule):
             if in_struct:
                 if "}" in stripped:
                     in_struct = False
+                continue
+
+            # Track function / task body scope (skip local variables)
+            if re.search(r"^\s*(?:pure\s+|virtual\s+|protected\s+|local\s+|static\s+|extern\s+)*(?:function|task)\b", line):
+                if not stripped.endswith(";"):
+                    in_function_or_task = True
+                continue
+            if stripped.startswith("endfunction") or stripped.startswith("endtask"):
+                in_function_or_task = False
                 continue
 
             # Track clocking block scope
@@ -102,23 +128,12 @@ class VariableDocumentationRule(BaseRule):
                     in_modport = False
                 continue
 
-            # Skip documentation requirements inside clocking, modport, or struct/union/enum structures
-            if in_clocking or in_modport or in_struct:
+            # Skip documentation requirements inside clocking, modport, struct/union/enum structures, or function/task bodies
+            if in_clocking or in_modport or in_struct or in_function_or_task:
                 continue
 
-            # Typedef logic
+            # Skip typedef declarations (handled by ND-011)
             if stripped.startswith("typedef"):
-                if "enum" in stripped:
-                    continue
-                comments = self._extract_comments_from_text(file_content, i + 1)
-                if not comments:
-                    violations.append(
-                        self.create_violation(
-                            file_path=file_path,
-                            line=i + 1,
-                            message="Typedef or variable declaration is missing documentation."
-                        )
-                    )
                 continue
 
             # Skip non-variable SystemVerilog construct keywords
@@ -135,7 +150,7 @@ class VariableDocumentationRule(BaseRule):
             # Plain variable or interface instance (e.g. logic [31:0] addr; or nd_bus_if bus_if();)
             # Also matches parameter/localparam declarations.
             match = re.match(
-                r"^\s*(?:rand\s+|randc\s+)?(?:parameter\s+|localparam\s+)?(?:logic|bit|int|byte|string|time|real|[a-zA-Z_][a-zA-Z0-9_]*)\s+(?:\[[^\]]+\]\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:;|=|\([^)]*\)\s*;)",
+                r"^\s*(?:rand\s+|randc\s+)?(?:parameter\s+|localparam\s+)?(?:logic|bit|int|byte|string|time|real|[a-zA-Z_][a-zA-Z0-9_]*)\s+(?:\[[^\]]+\]\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:;|=|\([^)]*\)\s*;)?",
                 line
             )
             if match:

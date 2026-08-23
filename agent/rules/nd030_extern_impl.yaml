@@ -1,0 +1,6 @@
+rule_id: "ND-030"
+description: "Extern method implementation comment"
+fixer_class: "agent.fixer.rules.fix_nd030_extern_impl.FixNd030"
+skill: "function_task"
+safety: safe
+batch_eligible: true

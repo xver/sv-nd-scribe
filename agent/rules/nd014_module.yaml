@@ -1,0 +1,8 @@
+rule_id: "ND-014"
+description: "Module documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd014_module.FixNd014"
+skill: "sv_constructs"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Module"

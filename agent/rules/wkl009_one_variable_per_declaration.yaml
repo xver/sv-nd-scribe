@@ -1,0 +1,6 @@
+rule_id: "WKL-009"
+description: "One variable per data declaration statement"
+fixer_class: "agent.fixer.rules.fix_wkl009_one_variable_per_declaration.FixWkl009"
+skill: "triage"
+safety: safe
+batch_eligible: true

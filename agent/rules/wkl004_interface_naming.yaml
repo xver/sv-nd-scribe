@@ -1,0 +1,6 @@
+rule_id: "WKL-004"
+description: "Interface _if suffix naming"
+fixer_class: "agent.fixer.rules.fix_wkl004_interface_naming.FixWkl004"
+skill: "triage"
+safety: unsafe
+batch_eligible: false

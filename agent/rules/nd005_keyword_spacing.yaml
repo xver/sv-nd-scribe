@@ -1,0 +1,6 @@
+rule_id: "ND-005"
+description: "Keyword spacing after //"
+fixer_class: "agent.fixer.rules.fix_nd005_keyword_spacing.FixNd005"
+skill: "nd_comment"
+safety: safe
+batch_eligible: true

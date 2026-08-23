@@ -1,0 +1,6 @@
+rule_id: "ND-012"
+description: "Description line after bare keyword"
+fixer_class: "agent.fixer.rules.fix_nd012_keyword_desc.FixNd012"
+skill: "variable_doc"
+safety: safe
+batch_eligible: true

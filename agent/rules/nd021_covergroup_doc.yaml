@@ -1,0 +1,8 @@
+rule_id: "ND-021"
+description: "Covergroup documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd021_covergroup_doc.FixNd021"
+skill: "coverage_doc"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Covergroup"

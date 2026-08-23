@@ -1,0 +1,6 @@
+rule_id: "ND-019"
+description: "Comment name identifier mismatch"
+fixer_class: "agent.fixer.rules.fix_nd019_identifier_match.FixNd019"
+skill: "nd_comment"
+safety: safe
+batch_eligible: true

@@ -1,0 +1,6 @@
+rule_id: "ND-016"
+description: "End statement label"
+fixer_class: "agent.fixer.rules.fix_nd016_end_label.FixNd016"
+skill: "nd_comment"
+safety: safe
+batch_eligible: true

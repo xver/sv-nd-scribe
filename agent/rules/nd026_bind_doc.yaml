@@ -1,0 +1,6 @@
+rule_id: "ND-026"
+description: "Bind statement documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd026_bind_doc.FixNd026"
+skill: "sv_constructs"
+safety: safe
+batch_eligible: true

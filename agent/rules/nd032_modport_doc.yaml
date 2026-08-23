@@ -1,0 +1,8 @@
+rule_id: "ND-032"
+description: "Modport documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd032_modport_doc.FixNd032"
+skill: "sv_constructs"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Modport"

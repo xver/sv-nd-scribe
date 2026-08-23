@@ -1,25 +1,27 @@
 Files checked: 12
 Files failed: 0
-Errors found: 65
+Errors found: 71
 Warnings found: 2
 
 Violations:
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bind.sv:1: [ERROR] [ND-001] Missing block comment file header (/* */).
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bind.sv:6: [ERROR] [ND-026] Bind directive is missing preceding NaturalDocs comment ('// Bind:').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bind.sv:4: [ERROR] [ND-001] File header Company field contains unresolved placeholder 'TODO_COMPANY'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bind.sv:6: [ERROR] [ND-001] File header Author field contains unresolved placeholder 'TODO_AUTHOR'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bind.sv:10: [ERROR] [ND-001] File header Created field contains unresolved placeholder 'TODO_AUTHOR'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bind.sv:12: [ERROR] [ND-001] File header Updated field contains unresolved placeholder 'TODO_AUTHOR'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bind.sv:14: [ERROR] [ND-001] File header contains unresolved placeholder 'TODO_COMPANY'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bind.sv:15: [ERROR] [ND-001] File header contains unresolved placeholder 'TODO_LEGAL'.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_bus_if.sv').
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:1: [ERROR] [ND-001] File header Author field must contain a valid email address.
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:10: [ERROR] [WKL-004] Interface 'nd_bus_interface' must end with '_if' suffix.
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:10: [ERROR] [ND-004] Documented statement 'interface nd_bus_interface (input logic clk, input logic rst_n);' is missing a preceding NaturalDocs comment block.
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:10: [ERROR] [ND-013] Interface 'nd_bus_interface' is missing preceding NaturalDocs documentation.
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:11: [ERROR] [ND-023] Variable or instance 'paddr' is missing documentation.
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:12: [ERROR] [ND-023] Variable or instance 'pwdata' is missing documentation.
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:14: [ERROR] [ND-031] Clocking block 'manager_cb' is missing a NaturalDocs comment ('//Clocking: manager_cb').
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:20: [ERROR] [ND-032] Modport 'manager' is missing a NaturalDocs comment ('//Modport: manager').
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:24: [ERROR] [ND-016] Missing labeled end statement for 'endinterface'. Expected 'endinterface : <name>'.
-/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:1: [ERROR] [ND-001] Documented file name 'wrong_filename.sv' in header does not match actual filename 'nd_config.sv'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:3: [ERROR] [ND-001] File header Author field must contain a valid email address.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:13: [ERROR] [ND-023] Variable or instance 'paddr' is missing documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:14: [ERROR] [ND-023] Variable or instance 'pwdata' is missing documentation.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:16: [ERROR] [ND-031] Clocking block 'manager_cb' is missing a NaturalDocs comment ('//Clocking: manager_cb').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:22: [ERROR] [ND-032] Modport 'manager' is missing a NaturalDocs comment ('//Modport: manager').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_bus_if.sv:26: [ERROR] [ND-016] Missing labeled end statement for 'endinterface'. Expected 'endinterface : <name>'.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:2: [ERROR] [ND-001] Documented file name 'wrong_filename.sv' in header does not match actual filename 'nd_config.sv'.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:11: [ERROR] [ND-009] Class 'nd_config' is missing NaturalDocs comment ('// Class: nd_config').
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:11: [ERROR] [ND-004] Documented statement 'class nd_config extends uvm_object;' is missing a preceding NaturalDocs comment block.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:14: [ERROR] [WKL-001] Class member 'raw_timeout' does not have required 'm_' prefix.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:14: [ERROR] [ND-023] Variable or instance 'raw_timeout' is missing documentation.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_config.sv:23: [ERROR] [ND-030] Extern method implementation 'nd_config::do_print' is missing documentation comment.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_driver.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_driver.sv').
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_driver.sv:13: [ERROR] [ND-019] Documented identifier 'wrong_driver_name' does not match code identifier 'nd_driver'.
@@ -49,6 +51,7 @@ Violations:
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_protocol_checker.sv:16: [ERROR] [ND-015] Property 'p_valid' is missing preceding NaturalDocs documentation.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_protocol_checker.sv:18: [ERROR] [ND-016] Missing labeled end statement for 'endproperty'. Expected 'endproperty : <name>'.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_sequence.sv').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:15: [ERROR] [ND-023] Variable or instance 'm_len' is missing documentation.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:17: [ERROR] [ND-020] Constraint 'c_len' is missing preceding NaturalDocs comment.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:21: [ERROR] [ND-017] Function 'new' is missing a NaturalDocs comment ('// Function: new').
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_sequence.sv:26: [ERROR] [ND-004] Documented statement 'module seq_runner;' is missing a preceding NaturalDocs comment block.
@@ -63,10 +66,13 @@ Violations:
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:7: [ERROR] [WKL-003] Macro `small_macro` should be in UPPER_SNAKE_CASE.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:7: [ERROR] [ND-007] Macro `small_macro` is missing NaturalDocs documentation ('// define: small_macro').
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:12: [ERROR] [WKL-008] Tab character (\t) found in line.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:12: [ERROR] [ND-023] Variable or instance 'a' is missing documentation.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:13: [ERROR] [ND-028] Continuous assignment ('assign') is missing preceding NaturalDocs comment.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_top_wrapper.sv:14: [WARNING] [WKL-007] Line exceeds maximum length of 120 characters (155 > 120).
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:1: [ERROR] [ND-001] File header is missing 'File:' NaturalDocs keyword ('File: nd_transaction.sv').
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:10: [ERROR] [ND-007] Macro `MAX_TRANSACTIONS` is missing NaturalDocs documentation ('// define: MAX_TRANSACTIONS').
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:17: [ERROR] [WKL-001] Class member 'bit' does not have required 'm_' prefix.
+/home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:17: [ERROR] [ND-023] Variable or instance 'm_addr' is missing documentation.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:19: [ERROR] [ND-021] Covergroup 'trans_cg' is missing preceding NaturalDocs comment.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:20: [ERROR] [ND-022] Coverpoint 'm_addr' is missing preceding NaturalDocs comment.
 /home/v/proj/sv-nd-scribe/makedir/../tests/test_bad_sv/nd_transaction.sv:23: [ERROR] [ND-017] Function 'new' is missing a NaturalDocs comment ('// Function: new').

@@ -1,0 +1,6 @@
+rule_id: "ND-027"
+description: "Always/initial process documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd027_process_doc.FixNd027"
+skill: "process_assign"
+safety: safe
+batch_eligible: true

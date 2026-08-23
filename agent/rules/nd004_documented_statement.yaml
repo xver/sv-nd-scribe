@@ -1,0 +1,6 @@
+rule_id: "ND-004"
+description: "Documented statement comment block"
+fixer_class: "agent.fixer.rules.fix_nd004_documented_stmt.FixNd004"
+skill: "nd_comment"
+safety: safe
+batch_eligible: true

@@ -2,7 +2,7 @@
   "name": "sv-nd-scribe-vscode",
   "displayName": "SV ND Scribe",
   "description": "SV ND Scribe: Real-time NaturalDocs documentation and formatting feedback for SystemVerilog",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "icon": "scribe_logo.jpg",
   "publisher": "ic-verimeter",
   "engines": {
@@ -37,6 +37,14 @@
       {
         "command": "sv-nd-scribe.verifyInstallation",
         "title": "SV_Scribe: Verify linter installation"
+      },
+      {
+        "command": "sv-nd-scribe.fix",
+        "title": "SV_Scribe: Fix all auto-fixable issues in file"
+      },
+      {
+        "command": "sv-nd-scribe.fixRule",
+        "title": "SV_Scribe: Fix specific rule in file"
       }
     ],
     "configuration": {
@@ -47,10 +55,25 @@
           "default": "",
           "description": "Absolute path to the linter.py executable python file. If empty, falls back to $SVND_SCRIBE_HOME/linter/linter.py."
         },
+        "sv-nd-scribe.agentPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the agent directory or agent.py. If empty, falls back to $SVND_SCRIBE_HOME/agent."
+        },
         "sv-nd-scribe.pythonPath": {
           "type": "string",
           "default": "python3",
           "description": "Path to the python interpreter."
+        },
+        "sv-nd-scribe.enableQuickFix": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Quick Fix (Code Action) recommendations for linter diagnostics."
+        },
+        "sv-nd-scribe.env": {
+          "type": "object",
+          "default": {},
+          "description": "Environment variables passed to the linter and agent processes (e.g. SVND_SCRIBE_HOME, PYTHONPATH, SV_ND_SCRIBE_PROJECT_CONFIG)."
         },
         "sv-nd-scribe.runOn": {
           "type": "string",

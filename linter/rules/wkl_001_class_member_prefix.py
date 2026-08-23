@@ -41,18 +41,43 @@ class ClassMemberPrefixRule(BaseRule):
                     text = getattr(dnode, 'text', '') or ""
                     if re.search(r"\b(typedef|function|task|const)\b", text):
                         continue
-                    m = re.search(r"^\s*(?:rand\s+|randc\s+|protected\s+|local\s+|static\s+)*[a-zA-Z0-9_:]+\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*;", text, re.MULTILINE)
-                    if m:
-                        var_name = m.group(1)
-                        if var_name not in EXCEPTIONS and not var_name.startswith("m_") and not var_name.startswith("is_"):
-                            line = self._node_start_line(dnode, file_content, context)
-                            violations.append(
-                                self.create_violation(
-                                    file_path=file_path,
-                                    line=line,
-                                    message=f"Class member '{var_name}' does not have required 'm_' prefix."
+                    vars_found = []
+                    if hasattr(dnode, 'find_all'):
+                        vars_found = list(dnode.find_all(
+                            lambda sub: getattr(sub, 'tag', '') in {'kVariableDeclarationAssignment', 'kRegisterVariable', 'kNetVariable'}
+                        ))
+                    if vars_found:
+                        for v in vars_found:
+                            v_text = getattr(v, 'text', '').strip()
+                            m = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)", v_text)
+                            var_name = m.group(1) if m else v_text.split("=")[0].split("[")[0].strip()
+                            if var_name and var_name not in EXCEPTIONS and not var_name.startswith("m_") and not var_name.startswith("is_"):
+                                line = self._node_start_line(dnode, file_content, context)
+                                violations.append(
+                                    self.create_violation(
+                                        file_path=file_path,
+                                        line=line,
+                                        message=f"Class member '{var_name}' does not have required 'm_' prefix."
+                                    )
                                 )
-                            )
+                    else:
+                        m = re.match(
+                            r"^\s*(?:(?:rand|randc|protected|local|static|const|virtual|automatic)\s+)*"
+                            r"(?:(?:logic|bit|byte|shortint|int|longint|integer|time|shortreal|real|realtime|string|[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*)\s*)"
+                            r"(?:\s*\[[^\]]+\])*\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+                            text.strip()
+                        )
+                        if m:
+                            var_name = m.group(1)
+                            if var_name not in EXCEPTIONS and not var_name.startswith("m_") and not var_name.startswith("is_"):
+                                line = self._node_start_line(dnode, file_content, context)
+                                violations.append(
+                                    self.create_violation(
+                                        file_path=file_path,
+                                        line=line,
+                                        message=f"Class member '{var_name}' does not have required 'm_' prefix."
+                                    )
+                                )
             return violations
 
         # Fallback text parsing
@@ -69,7 +94,13 @@ class ClassMemberPrefixRule(BaseRule):
             if in_class:
                 if re.search(r"\b(typedef|function|task|const)\b", line):
                     continue
-                match = re.match(r"^\s*(?:rand\s+|randc\s+|protected\s+|local\s+|static\s+)*[a-zA-Z0-9_:]+\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*;", line)
+                code_part = stripped.split("//")[0].split("/*")[0].strip()
+                match = re.match(
+                    r"^\s*(?:(?:rand|randc|protected|local|static|const|virtual|automatic)\s+)*"
+                    r"(?:(?:logic|bit|byte|shortint|int|longint|integer|time|shortreal|real|realtime|string|[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*)\s*)"
+                    r"(?:\s*\[[^\]]+\])*\s+([a-zA-Z_][a-zA-Z0-9_]*)",
+                    code_part
+                )
                 if match:
                     var_name = match.group(1)
                     if var_name not in EXCEPTIONS and not var_name.startswith("m_") and not var_name.startswith("is_"):

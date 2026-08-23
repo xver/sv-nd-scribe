@@ -4,7 +4,7 @@
 #
 # Usage:
 #   python -m linter -f makedir/template_sv.f
-#   (from project root: \\wsl.localhost\Ubuntu\home\v\proj\sv-nd-scribe)
+#   (from project root: /path/to/sv-nd-scribe)
 
 ../template/sv/nd_bind.sv
 ../template/sv/nd_bus_if.sv

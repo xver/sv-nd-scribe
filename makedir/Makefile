@@ -34,6 +34,13 @@ lint_bad:
 status:
 	cd .. && $(PYTHON) -m linter --status
 
+agent_status:
+	cd .. && $(PYTHON) -m agent --status
+
+agent_mvp:
+	cd .. && $(PYTHON) -m agent --llm none --batch --no-backup -f $(MANIFEST_BAD)
+	cd .. && $(PYTHON) -m linter -f $(MANIFEST_BAD) -o $(CURDIR)/$(LOG_BAD_FILE)
+
 vscode:
 	@if [ "$(NEW)" = "1" ]; then \
 		echo "Bumping VS Code extension version..."; \
@@ -41,18 +48,22 @@ vscode:
 	fi
 	cd ../vscode && npx -y @vscode/vsce package
 
+config_vscode vsconfig:
+	$(PYTHON) $(CURDIR)/configure_vscode.py
+
 help:
 	@echo ""
 	@echo "Usage: make [target] [VARIABLE=value]"
 	@echo ""
 	@echo "Targets:"
-	@echo "  all          Run 'nd' and 'lint' targets sequentially"
-	@echo "  nd           Generate NaturalDocs HTML documentation (requires ND_HOME)"
-	@echo "  lint         Lint production template files (template_sv.f)"
-	@echo "  lint_bad     Lint negative-test files (test_bad_sv.f), used to verify all rules fire"
-	@echo "  status       Check linter environment and dependencies"
-	@echo "  vscode       Compile and package the VS Code extension (.vsix)"
-	@echo "  help         Show this help message"
+	@echo "  all            Run 'nd' and 'lint' targets sequentially"
+	@echo "  nd             Generate NaturalDocs HTML documentation (requires ND_HOME)"
+	@echo "  lint           Lint production template files (template_sv.f)"
+	@echo "  lint_bad       Lint negative-test files (test_bad_sv.f), used to verify all rules fire"
+	@echo "  status         Check linter environment and dependencies"
+	@echo "  vscode         Compile and package the VS Code extension (.vsix)"
+	@echo "  config_vscode  Automatically configure .vscode/settings.json for this project"
+	@echo "  help           Show this help message"
 	@echo ""
 	@echo "Variables (override on command line, e.g. make lint PYTHON=python3.11):"
 	@echo "  ND_HOME      Path to NaturalDocs installation dir (must contain 'NaturalDocs' executable)"

@@ -4,28 +4,34 @@ Real-time SystemVerilog in-editor diagnostic feedback utilizing the **SV ND Scri
 
 ## Features
 
-- Highlights NaturalDocs documentation violations (`[WKL-007]`).
-- Highlights trailing whitespace (`[WKL-006]`), multiple trailing newlines (`[WKL-005]`), and other syntax formatting issues in real-time.
-- Supports customizable linter configuration.
+- Real-time diagnostics for NaturalDocs documentation and SystemVerilog style guidelines.
+- **Quick Fix (`Ctrl+.` / `Cmd+.` / 💡)**: Apply automated fixes directly from inline error and warning markers.
+- **Batch Auto-Fix**: Automatically fix all safe issues across the current file in one click (`SV_Scribe: Fix all auto-fixable issues in file`).
+- Highlights trailing whitespace (`[WKL-006]`), multiple trailing newlines (`[WKL-005]`), missing headers (`[ND-001]`), include guards (`[ND-002]`), and construct doc blocks.
+- Supports customizable linter and agent configuration.
 
 ## Requirements
 
 1. **Python 3**
 2. **Verible** - specifically `verible-verilog-syntax` installed in your PATH.
-3. The standalone `sv-nd-scribe` linter package downloaded to your machine.
+3. The standalone `sv-nd-scribe` linter & agent package downloaded to your machine.
 
 ## Configuration
 
 You can configure this extension via VS Code Settings:
 
 * `sv-nd-scribe.linterPath`: Absolute path to `linter.py`. If left blank, it automatically falls back to `$SVND_SCRIBE_HOME/linter/linter.py` (Default: `""`).
+* `sv-nd-scribe.agentPath`: Absolute path to the `agent` module or `agent.py`. If left blank, it automatically falls back to `$SVND_SCRIBE_HOME/agent` (Default: `""`).
 * `sv-nd-scribe.pythonPath`: Path to the python interpreter (Default: `python3`).
+* `sv-nd-scribe.enableQuickFix`: Enable or disable Quick Fix (Code Action) suggestions (Default: `true`).
 * `sv-nd-scribe.runOn`: Trigger execution on save (`onSave`) or when opening documents (`onOpen`).
 
 ## Commands
 
 Use the VS Code Command Palette (`Ctrl+Shift+P`) to run:
 
+- **`SV_Scribe: Fix all auto-fixable issues in file`**: Run batch fixer on active file.
+- **`SV_Scribe: Fix specific rule in file`**: Fix a specific rule violation in the active file.
 - **`SV_Scribe: Lint`**: Manually lint the active file.
 - **`SV_Scribe: Clear`**: Clear diagnostic outlines.
 - **`SV_Scribe: Lint_All`**: Lint all open SystemVerilog documents.

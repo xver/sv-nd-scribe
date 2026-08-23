@@ -1,0 +1,8 @@
+rule_id: "ND-022"
+description: "Coverpoint documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd022_coverpoint_doc.FixNd022"
+skill: "coverage_doc"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Coverpoint"

@@ -1,0 +1,6 @@
+rule_id: "ND-006"
+description: "Group heading format"
+fixer_class: "agent.fixer.rules.fix_nd006_group_heading.FixNd006"
+skill: "group_heading"
+safety: safe
+batch_eligible: true

@@ -1,0 +1,6 @@
+rule_id: "ND-028"
+description: "Assign statement documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd028_assign_doc.FixNd028"
+skill: "process_assign"
+safety: safe
+batch_eligible: true

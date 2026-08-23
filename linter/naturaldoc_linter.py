@@ -111,6 +111,7 @@ class NaturalDocLinter(BaseLinter):
             TrailingWhitespaceRule,
             LineLengthRule,
             NoTabsRule,
+            OneVariablePerDeclarationRule,
             FileHeaderRule,
             IncludeGuardRule,
             CommentSpacingRule,
@@ -151,11 +152,12 @@ class NaturalDocLinter(BaseLinter):
         self.add_rule(MacroFormatRule(self._rule_config("[WKL-003]")))
         self.add_rule(InterfaceNamingRule(self._rule_config("[WKL-004]")))
 
-        # 2. Format Rules
+        # 2. Format & Declaration Rules
         self.add_rule(EOFEmptyLineRule(self._rule_config("[WKL-005]")))
         self.add_rule(TrailingWhitespaceRule(self._rule_config("[WKL-006]")))
         self.add_rule(LineLengthRule(self._rule_config("[WKL-007]")))
         self.add_rule(NoTabsRule(self._rule_config("[WKL-008]")))
+        self.add_rule(OneVariablePerDeclarationRule(self._rule_config("[WKL-009]")))
 
         # 3. Doc Rules
         self.add_rule(FileHeaderRule(self._rule_config("[ND-001]")))
@@ -187,7 +189,8 @@ class NaturalDocLinter(BaseLinter):
         self.add_rule(ProcessDocumentationRule(self._rule_config("[ND-027]")))
         self.add_rule(AssignDocumentationRule(self._rule_config("[ND-028]")))
         self.add_rule(ProgramDocumentationRule(self._rule_config("[ND-029]")))
-        self.add_rule(ExternImplementationRule(self._rule_config("[ND-030]")))
+        # ND-030 disabled: method documentation belongs on declarations inside the class, not external implementations
+        # self.add_rule(ExternImplementationRule(self._rule_config("[ND-030]")))
         self.add_rule(ClockingDocumentationRule(self._rule_config("[ND-031]")))
         self.add_rule(ModportDocumentationRule(self._rule_config("[ND-032]")))
 

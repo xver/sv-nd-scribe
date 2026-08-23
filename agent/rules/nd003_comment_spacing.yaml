@@ -1,0 +1,6 @@
+rule_id: "ND-003"
+description: "Comment keyword spacing"
+fixer_class: "agent.fixer.rules.fix_nd003_comment_spacing.FixNd003"
+skill: "nd_comment"
+safety: safe
+batch_eligible: true

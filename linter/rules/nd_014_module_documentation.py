@@ -47,7 +47,7 @@ class ModuleDocumentationRule(BaseRule):
                 if mod_name:
                     line = self._node_start_line(node, file_content, context)
                     comments = self._comments_before_node(node, file_content, context)
-                    if not comments or not any("module" in c.lower() for c in comments):
+                    if not comments or not any(re.search(r"\bmodule\s*:", c, re.IGNORECASE) for c in comments):
                         violations.append(
                             self.create_violation(
                                 file_path=file_path,
@@ -64,7 +64,7 @@ class ModuleDocumentationRule(BaseRule):
             if match:
                 mod_name = match.group(1)
                 comments = self._extract_comments_from_text(file_content, i + 1)
-                if not comments or not any("module" in c.lower() for c in comments):
+                if not comments or not any(re.search(r"\bmodule\s*:", c, re.IGNORECASE) for c in comments):
                     violations.append(
                         self.create_violation(
                             file_path=file_path,

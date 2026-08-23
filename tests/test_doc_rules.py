@@ -40,6 +40,8 @@ from linter.rules import (
     PackageDocumentationRule,
     ClockingDocumentationRule,
     ModportDocumentationRule,
+    TypeDocumentationRule,
+    OneVariablePerDeclarationRule,
 )
 
 
@@ -78,6 +80,22 @@ class DocRulesTests(unittest.TestCase):
         violations = rule.check("sample.sv", content, None)
 
         self.assertTrue(any("author" in v.message.lower() for v in violations))
+        # Author field is on line 4 of content
+        author_viol = [v for v in violations if "author" in v.message.lower()][0]
+        self.assertEqual(author_viol.line, 4)
+
+    def test_file_header_rule_flags_todo_placeholders_with_exact_lines(self):
+        rule = FileHeaderRule()
+        content = "/*\n * File: sample.sv\n * Company: TODO_COMPANY\n * Author: John Doe\n */\n"
+        violations = rule.check("sample.sv", content, None)
+
+        todo_viols = [v for v in violations if "TODO_COMPANY" in v.message]
+        self.assertTrue(todo_viols)
+        self.assertEqual(todo_viols[0].line, 3)
+
+        author_viols = [v for v in violations if "email" in v.message]
+        self.assertTrue(author_viols)
+        self.assertEqual(author_viols[0].line, 4)
 
     def test_keyword_description_rule_flags_missing_description(self):
         rule = KeywordDescriptionRule()
@@ -345,12 +363,12 @@ class DocRulesTests(unittest.TestCase):
 
         self.assertTrue(any("variable" in v.message.lower() for v in violations))
 
-    def test_variable_rule_flags_missing_typedef_comment(self):
-        rule = VariableDocumentationRule()
+    def test_type_rule_flags_missing_typedef_comment(self):
+        rule = TypeDocumentationRule()
         content = "typedef logic [31:0] addr_t;\n"
         violations = rule.check("sample.sv", content, None)
 
-        self.assertTrue(any("variable" in v.message.lower() for v in violations))
+        self.assertTrue(any("typedef" in v.message.lower() for v in violations))
 
     def test_variable_rule_skips_enum_typedefs(self):
         rule = VariableDocumentationRule()
@@ -415,8 +433,8 @@ class DocRulesTests(unittest.TestCase):
         rule = ExternImplementationRule()
         content = "class demo_cls;\nextern function void sample();\nendclass : demo_cls\nfunction void demo_cls::sample();\nendfunction : sample\n"
         violations = rule.check("sample.sv", content, None)
-
-        self.assertTrue(any("extern" in v.message.lower() or "implementation" in v.message.lower() for v in violations))
+        # ND-030 is deprecated/disabled as out-of-body implementations do not require ND comments
+        self.assertEqual(len(violations), 0)
 
 
     def test_interface_naming_rule(self):
@@ -482,6 +500,27 @@ class DocRulesTests(unittest.TestCase):
         content = "//Variable: NUM_LANES\n//Number of lanes.\nparameter int NUM_LANES = 4;\n"
         violations = rule.check("sample.sv", content, None)
         self.assertEqual(violations, [])
+
+    def test_one_variable_per_declaration_flags_multiple_vars(self):
+        rule = OneVariablePerDeclarationRule()
+        content = "module sample;\n  wire a, b;\n  logic [31:0] x = 0, y;\n  int count1, count2, count3;\nendmodule\n"
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(len(violations), 3)
+        self.assertTrue(all(v.rule_id == "[WKL-009]" for v in violations))
+
+    def test_one_variable_per_declaration_allows_single_var(self):
+        rule = OneVariablePerDeclarationRule()
+        content = "module sample;\n  wire a;\n  wire b;\n  logic [31:0] x = 0;\n  logic [31:0] y;\n  int count1;\nendmodule\n"
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [])
+
+    def test_one_variable_per_declaration_fixer(self):
+        from agent.fixer.rules.fix_wkl009_one_variable_per_declaration import FixWkl009
+        fixer = FixWkl009()
+        lines = ["module sample;\n", "  wire a, b;\n", "endmodule\n"]
+        proposal = fixer.propose({"line": 2, "file": "sample.sv"}, lines)
+        self.assertIsNotNone(proposal)
+        self.assertEqual(proposal.patch_lines, ["  wire a;\n", "  wire b;\n"])
 
 
 class IntegrationTests(unittest.TestCase):

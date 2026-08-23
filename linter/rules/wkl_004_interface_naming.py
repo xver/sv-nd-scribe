@@ -31,10 +31,20 @@ class InterfaceNamingRule(BaseRule):
         if nodes:
             for node in nodes:
                 intf_name = ""
-                text = getattr(node, 'text', '') or ""
-                m = re.search(r"interface\s+([a-zA-Z_][a-zA-Z0-9_]*)", text)
-                if m:
-                    intf_name = m.group(1)
+                if hasattr(node, 'find_all'):
+                    try:
+                        id_nodes = list(node.find_all(lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'))
+                        if id_nodes:
+                            intf_name = id_nodes[0].text
+                    except Exception:
+                        pass
+                if not intf_name:
+                    text = getattr(node, 'text', '') or ""
+                    clean_lines = [l for l in text.splitlines() if not l.strip().startswith(("//", "/*", "*"))]
+                    clean_text = "\n".join(clean_lines)
+                    m = re.search(r"\binterface\s+([a-zA-Z_][a-zA-Z0-9_]*)", clean_text)
+                    if m:
+                        intf_name = m.group(1)
                 if intf_name and not intf_name.endswith("_if"):
                     line = self._node_start_line(node, file_content, context)
                     violations.append(
@@ -49,6 +59,9 @@ class InterfaceNamingRule(BaseRule):
         # Fallback text parsing
         lines = file_content.splitlines()
         for i, line in enumerate(lines):
+            stripped = line.strip()
+            if stripped.startswith("//") or stripped.startswith("/*") or stripped.startswith("*"):
+                continue
             match = re.match(r"^\s*interface\s+([a-zA-Z_][a-zA-Z0-9_]*)", line)
             if match:
                 intf_name = match.group(1)

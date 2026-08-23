@@ -1,0 +1,8 @@
+rule_id: "ND-018"
+description: "Checker comment block"
+fixer_class: "agent.fixer.rules.fix_nd018_checker_kind.FixNd018"
+skill: "nd_comment"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Checker"

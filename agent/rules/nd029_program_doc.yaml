@@ -1,0 +1,8 @@
+rule_id: "ND-029"
+description: "Program documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd029_program_doc.FixNd029"
+skill: "sv_constructs"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Program"

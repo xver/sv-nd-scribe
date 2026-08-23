@@ -1,0 +1,8 @@
+rule_id: "ND-013"
+description: "Interface documentation comment"
+fixer_class: "agent.fixer.rules.fix_nd013_interface_doc.FixNd013"
+skill: "sv_constructs"
+safety: safe
+batch_eligible: true
+prompt_extras:
+  keyword: "Interface"

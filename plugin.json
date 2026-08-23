@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "sv-nd-scribe-agent",
+  "version": "1.0.0",
+  "description": "SystemVerilog NaturalDocs linter and AI auto-fixer for SystemVerilog files",
+  "license": "MIT",
+  "keywords": ["systemverilog", "verilog", "linter", "naturaldocs", "eda", "rtl"],
+  "author": {
+    "name": "IC Verimeter",
+    "email": "icshunt.help@gmail.com"
+  }
+}

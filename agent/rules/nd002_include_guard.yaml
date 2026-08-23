@@ -1,0 +1,6 @@
+rule_id: "ND-002"
+description: "Include guard `ifndef / `define"
+fixer_class: "agent.fixer.rules.fix_nd002_include_guard.FixNd002"
+skill: "nd_comment"
+safety: safe
+batch_eligible: true

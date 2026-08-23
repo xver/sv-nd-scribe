@@ -1,0 +1,6 @@
+rule_id: "WKL-006"
+description: "Strip trailing whitespace"
+fixer_class: "agent.fixer.rules.fix_wkl006_trailing_whitespace.FixWkl006"
+skill: "triage"
+safety: safe
+batch_eligible: true
