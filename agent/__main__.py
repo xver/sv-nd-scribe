@@ -12,7 +12,6 @@ from agent.agent import ScribeAgent
 from agent.fixer.base_fixer import LinterError
 
 def parse_manifest_file(manifest_path: str) -> list:
-    """Parse a .f manifest file to extract SystemVerilog source paths."""
     files = []
     manifest_dir = os.path.dirname(os.path.abspath(manifest_path))
     try:
@@ -48,6 +47,9 @@ def main():
     parser.add_argument("--debug-llm", action="store_true", help="Dump LLM prompts and raw responses to log file")
     parser.add_argument("-c", "--config", help="Path to configuration file (JSON)")
     parser.add_argument("--status", action="store_true", help="Check LLM connectivity and active skill/rule paths")
+    parser.add_argument("--open-header-template", action="store_true", help="Print path and content of active header_template.txt")
+    parser.add_argument("--reset-header-template", action="store_true", help="Reset active header_template.txt to built-in default")
+    parser.add_argument("--overwrite-header", action="store_true", help="Force overwrite file header from template")
 
     args = parser.parse_args()
 
@@ -57,6 +59,19 @@ def main():
         sys.exit(1)
 
     agent = ScribeAgent(config_file=args.config)
+
+    if args.open_header_template:
+        tpath = agent.get_header_template_path(args.files[0] if args.files else None)
+        print(f"Header Template Path: {tpath}")
+        if os.path.exists(tpath):
+            with open(tpath, "r", encoding="utf-8") as f:
+                print(f.read())
+        sys.exit(0)
+
+    if args.reset_header_template:
+        tpath = agent.reset_header_template(args.files[0] if args.files else None)
+        print(f"Reset header template at: {tpath}")
+        sys.exit(0)
 
     if args.status:
         exit_code = agent.run(files=[], status_check=True, llm_provider=args.llm)
@@ -87,12 +102,18 @@ def main():
             dry_run=args.dry_run,
             json_output=args.json,
             debug_llm=args.debug_llm,
+            overwrite_header=args.overwrite_header,
         )
+        sys.exit(exit_code)
     except LinterError as e:
-        print(f"[agent] Error: {e}", file=sys.stderr)
+        print(f"[agent] Fatal linter error: {e}", file=sys.stderr)
         sys.exit(1)
-
-    sys.exit(exit_code)
+    except KeyboardInterrupt:
+        print("\n[agent] Aborted by user.", file=sys.stderr)
+        sys.exit(130)
+    except Exception as e:
+        print(f"[agent] Unexpected runtime error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

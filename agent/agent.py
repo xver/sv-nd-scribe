@@ -117,6 +117,7 @@ class ScribeAgent:
         json_output: bool = False,
         status_check: bool = False,
         debug_llm: bool = False,
+        overwrite_header: bool = False,
     ) -> int:
         """
         Main execution pipeline.
@@ -142,6 +143,7 @@ class ScribeAgent:
                 dry_run=dry_run,
                 json_output=json_output,
                 status_check=status_check,
+                overwrite_header=overwrite_header,
             )
         finally:
             if self._llm_debug_log is not None:
@@ -161,6 +163,7 @@ class ScribeAgent:
         dry_run: bool = False,
         json_output: bool = False,
         status_check: bool = False,
+        overwrite_header: bool = False,
     ) -> int:
         """Internal pipeline implementation, wrapped by run() for resource cleanup."""
         if status_check:
@@ -182,11 +185,11 @@ class ScribeAgent:
         linter_data = self.run_linter(files)
         violations = linter_data.get("violations", [])
         
-        if not violations:
+        if not violations and not overwrite_header:
             if json_output:
                 print(json.dumps({"status": "clean", "fixed_count": 0, "remaining_count": 0}))
             else:
-                print("[agent] \u2705 No linter violations found. Source code is clean.")
+                print("[agent] No linter violations found. Source code is clean.")
             return 0
 
         # Filter by rules if requested
@@ -200,6 +203,29 @@ class ScribeAgent:
             file_path = v.get("file")
             if file_path:
                 violations_by_file.setdefault(file_path, []).append(v)
+
+        if overwrite_header:
+            for f in files:
+                abs_f = os.path.abspath(f)
+                matched_key = None
+                for k in list(violations_by_file.keys()):
+                    if os.path.abspath(k) == abs_f:
+                        matched_key = k
+                        break
+                if not matched_key:
+                    matched_key = f
+                    violations_by_file[matched_key] = []
+                violations_by_file[matched_key] = [
+                    v for v in violations_by_file[matched_key]
+                    if v.get("rule_id", "").strip("[]") != "ND-001"
+                ]
+                violations_by_file[matched_key].append({
+                    "file": matched_key,
+                    "line": 1,
+                    "rule_id": "[ND-001]",
+                    "message": "Overwrite file header from template request",
+                    "force_overwrite": True
+                })
 
         file_fixer = FileFixer(
             backup_strategy=self.agent_config.get("backup", "auto"),
@@ -229,15 +255,15 @@ class ScribeAgent:
                 }
             }
 
-            seen_rules = set()
+            seen_rule_lines = set()
             file_props = []
             for v in sorted_viols:
                 raw_rule_id = v.get("rule_id", "")
                 rule_id = raw_rule_id.strip("[]")
-                if rule_id == "ND-001":
-                    if "ND-001" in seen_rules:
-                        continue
-                    seen_rules.add("ND-001")
+                rule_line = v.get("line", 0)
+                if (rule_id, rule_line) in seen_rule_lines:
+                    continue
+                seen_rule_lines.add((rule_id, rule_line))
                 raw_rule_id = v.get("rule_id", "")
                 rule_id = raw_rule_id.strip("[]")
                 rule_def = self.rules_cache.get(rule_id, {})
@@ -258,7 +284,7 @@ class ScribeAgent:
                 norm_viol = dict(v)
                 norm_viol["rule_id"] = rule_id
 
-                proposal = fixer.propose(norm_viol, source_lines, config=self.agent_config, provider=provider)
+                proposal = fixer.propose(norm_viol, source_lines, config=self.agent_config, provider=provider, overwrite_header=overwrite_header)
                 if proposal:
                     if isinstance(proposal, list):
                         file_props.extend(proposal)
@@ -297,9 +323,9 @@ class ScribeAgent:
                 }
                 print(json.dumps(output_data, indent=2))
             else:
-                print(f"=== SV ND Scribe Agent \u2014 Dry Run ({len(all_proposals)} proposals) ===")
+                print(f"=== SV ND Scribe Agent - Dry Run ({len(all_proposals)} proposals) ===")
                 for p in all_proposals:
-                    print(f"[{p.rule_id}] {p.file}:{p.line} \u2014 {p.description}")
+                    print(f"[{p.rule_id}] {p.file}:{p.line} - {p.description}")
                     for line in p.patch_lines:
                         print(f"  + {line.rstrip()}")
             return 0
@@ -389,3 +415,57 @@ class ScribeAgent:
         print("*(Note: Project/user overrides appear only in Phase 2.)*")
         
         return 0 if provider.is_available else 1
+
+    def get_header_template_path(self, target_file: Optional[str] = None) -> str:
+        """Resolve the path to the active header_template.txt."""
+        custom_tmpl = self.agent_config.get("custom_header_template") or self.agent_config.get("header_template")
+        if custom_tmpl and os.path.exists(custom_tmpl):
+            return os.path.abspath(custom_tmpl)
+
+        candidates = [
+            ".sv-nd-scribe/header_template.txt",
+            ".sv-nd-scribe/header_template",
+            "header_template.txt",
+            "header_template",
+            "template/header_template.txt",
+            "template/header_template"
+        ]
+        start_dir = os.path.dirname(os.path.abspath(target_file)) if target_file else os.getcwd()
+        curr = start_dir
+        for _ in range(10):
+            for cand in candidates:
+                cand_path = cand if os.path.isabs(cand) else os.path.join(curr, cand)
+                if os.path.exists(cand_path):
+                    return os.path.abspath(cand_path)
+            parent = os.path.dirname(curr)
+            if parent == curr:
+                break
+            curr = parent
+
+        default_path = os.path.join(self.scribe_home, "agent", "templates", "header_template.txt")
+        return os.path.abspath(default_path)
+
+    def reset_header_template(self, target_file: Optional[str] = None) -> str:
+        """Reset the active header_template.txt to the built-in default content."""
+        template_path = self.get_header_template_path(target_file)
+        default_content = """/******************************************************************************
+ * File:        ${filename}
+ *
+ * Company:     ${company}
+ *
+ * Author:      ${author}
+ *
+ * Description: ${description}
+ *
+ * Created:     ${created}
+ *
+ * Updated:     ${updated}
+ *
+ * Copyright (c) ${year} ${company}
+ * ${legal}
+ ******************************************************************************/
+"""
+        os.makedirs(os.path.dirname(template_path), exist_ok=True)
+        with open(template_path, "w", encoding="utf-8") as f:
+            f.write(default_content)
+        return template_path

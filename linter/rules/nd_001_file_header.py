@@ -6,6 +6,23 @@ import re
 from typing import Any, List
 from linter.core.base_rule import BaseRule, RuleViolation, RuleSeverity
 
+DEFAULT_BUILTIN_HEADER_TEMPLATE = """/******************************************************************************
+ * File:        ${filename}
+ *
+ * Company:     ${company}
+ *
+ * Author:      ${author}
+ *
+ * Description: ${description}
+ *
+ * Created:     ${created}
+ *
+ * Updated:     ${updated}
+ *
+ * Copyright (c) ${year} ${company}
+ * ${legal}
+ ******************************************************************************/"""
+
 
 class FileHeaderRule(BaseRule):
     """
@@ -36,13 +53,38 @@ class FileHeaderRule(BaseRule):
         if custom_template:
             return True
 
-        candidates = ["header_template.sv", ".sv_header_template.sv", "template/header_template.sv"]
-        file_dir = os.path.dirname(os.path.abspath(file_path)) if file_path else os.getcwd()
+        if context and isinstance(context, dict) and context.get("disable_custom_template"):
+            return False
+
+        if not file_path or not os.path.isabs(file_path):
+            return False
+
+        norm_default = re.sub(r"\s+", " ", DEFAULT_BUILTIN_HEADER_TEMPLATE.strip())
+
+        candidates = [
+            ".sv-nd-scribe/header_template.txt",
+            ".sv-nd-scribe/header_template",
+            "header_template.txt",
+            "header_template",
+            "agent/templates/header_template.txt",
+            "agent/templates/header_template",
+            "template/header_template.txt",
+            "template/header_template"
+        ]
+        file_dir = os.path.dirname(os.path.abspath(file_path))
         curr = file_dir
         for _ in range(10):
             for cand in candidates:
-                if os.path.exists(os.path.join(curr, cand)):
-                    return True
+                cand_path = os.path.join(curr, cand)
+                if os.path.exists(cand_path):
+                    try:
+                        with open(cand_path, "r", encoding="utf-8") as f:
+                            content = f.read().strip()
+                        norm_content = re.sub(r"\s+", " ", content)
+                        if norm_content != norm_default:
+                            return True
+                    except Exception:
+                        pass
             parent = os.path.dirname(curr)
             if parent == curr:
                 break
@@ -52,11 +94,6 @@ class FileHeaderRule(BaseRule):
 
     def _check_header_content(self, header_text: str, file_path: str, line_num: int, context: Any = None) -> List[RuleViolation]:
         violations = []
-
-        # If a custom user header template exists, bypass field-level header rules entirely
-        if self._has_custom_template(file_path, context):
-            return violations
-
         file_basename = os.path.basename(file_path)
         header_lines = header_text.splitlines()
 
@@ -66,14 +103,15 @@ class FileHeaderRule(BaseRule):
                     return line_num + idx
             return line_num
 
-        # Check File: keyword
+        # 1. Check File: keyword (ALWAYS an ERROR)
         file_match = re.search(r"^\s*(?:\*|//|/\*|)\s*File:\s*(.*)", header_text, re.IGNORECASE | re.MULTILINE)
         if not file_match:
             violations.append(
                 self.create_violation(
                     file_path=file_path,
                     line=line_num,
-                    message=f"File header is missing 'File:' NaturalDocs keyword ('File: {file_basename}')."
+                    message=f"File header is missing 'File:' NaturalDocs keyword ('File: {file_basename}').",
+                    severity=RuleSeverity.ERROR
                 )
             )
         else:
@@ -84,117 +122,121 @@ class FileHeaderRule(BaseRule):
                     self.create_violation(
                         file_path=file_path,
                         line=file_line,
-                        message=f"Documented file name '{doc_file}' in header does not match actual filename '{file_basename}'."
+                        message=f"Documented file name '{doc_file}' in header does not match actual filename '{file_basename}'.",
+                        severity=RuleSeverity.ERROR
                     )
                 )
 
-        # Check Author field presence & email format
+        # If a custom user header template exists, disable ALL other field-level warnings and errors
+        if self._has_custom_template(file_path, context):
+            return violations
+
+        # Check Author format if present
         author_match = re.search(r"^\s*(?:\*|//|/\*|)\s*Author:\s*(.*)", header_text, re.IGNORECASE | re.MULTILINE)
-        if not author_match or not author_match.group(1).strip():
-            author_line = get_line_for_pattern(r"^\s*(?:\*|//|/\*|)\s*Author:")
-            violations.append(
-                self.create_violation(
-                    file_path=file_path,
-                    line=author_line,
-                    message="File header is missing 'Author:' field."
-                )
-            )
-        else:
+        if author_match:
             author_val = author_match.group(1).strip()
-            if "TODO" not in author_val and not re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", author_val):
+            if author_val and not re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", author_val):
                 author_line = get_line_for_pattern(r"^\s*(?:\*|//|/\*|)\s*Author:")
                 violations.append(
                     self.create_violation(
                         file_path=file_path,
                         line=author_line,
-                        message="File header Author field must contain a valid email address."
+                        message=f"File header Author '{author_val}' should contain a valid email address.",
+                        severity=RuleSeverity.WARNING
                     )
                 )
 
-        # Check TODO placeholders in header fields
+        # 2. Check for TODO placeholders (WARNING severity)
         for idx, l_str in enumerate(header_lines):
-            todo_match = re.search(r"\b(TODO[A-Za-z0-9_]*)\b", l_str)
-            if todo_match:
-                todo_token = todo_match.group(1)
-                actual_line = line_num + idx
-                field_match = re.search(r"^\s*(?:\*|//|/\*|)\s*([A-Za-z]+):\s*(.*)", l_str)
-                if field_match:
-                    field_name = field_match.group(1)
-                    msg = f"File header {field_name} field contains unresolved placeholder '{todo_token}'."
-                else:
-                    msg = f"File header contains unresolved placeholder '{todo_token}'."
-
+            cur_line = line_num + idx
+            if "TODO_COMPANY" in l_str or "TODO COMPANY" in l_str:
                 violations.append(
                     self.create_violation(
                         file_path=file_path,
-                        line=actual_line,
-                        message=msg
+                        line=cur_line,
+                        message="File header Company field contains unresolved placeholder 'TODO_COMPANY'.",
+                        severity=RuleSeverity.WARNING
+                    )
+                )
+            elif "TODO_AUTHOR" in l_str or "TODO AUTHOR" in l_str:
+                field_name = "Author" if "Author:" in l_str else "Created" if "Created:" in l_str else "Updated" if "Updated:" in l_str else "Author"
+                violations.append(
+                    self.create_violation(
+                        file_path=file_path,
+                        line=cur_line,
+                        message=f"File header {field_name} field contains unresolved placeholder 'TODO_AUTHOR'.",
+                        severity=RuleSeverity.WARNING
+                    )
+                )
+            elif "TODO_LEGAL" in l_str or "TODO LEGAL" in l_str:
+                violations.append(
+                    self.create_violation(
+                        file_path=file_path,
+                        line=cur_line,
+                        message="File header contains unresolved placeholder 'TODO_LEGAL'.",
+                        severity=RuleSeverity.WARNING
+                    )
+                )
+            elif "TODO" in l_str:
+                violations.append(
+                    self.create_violation(
+                        file_path=file_path,
+                        line=cur_line,
+                        message="File header contains unresolved placeholder 'TODO'.",
+                        severity=RuleSeverity.WARNING
                     )
                 )
 
         return violations
 
-    def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
+    def check(self, file_path: str, content: str, context: Any = None) -> List[RuleViolation]:
         violations = []
+        lines = content.splitlines()
 
-        tokens = self._get_rawtokens(context)
-        if tokens:
-            first_block_comment = None
-            source_bytes = self._source_bytes(file_content, context)
-            for tok in tokens:
-                if self._is_whitespace_token(tok):
-                    continue
-                if self._is_comment_token(tok):
-                    text = getattr(tok, 'text', '').strip() if hasattr(tok, 'text') else ""
-                    if text.startswith("/*"):
-                        first_block_comment = tok
-                        break
-                    continue
+        if not lines:
+            return violations
+
+        first_non_empty_idx = -1
+        for idx, line in enumerate(lines):
+            if line.strip():
+                first_non_empty_idx = idx
                 break
 
-            if first_block_comment is None:
-                violations.append(
-                    self.create_violation(
-                        file_path=file_path,
-                        line=1,
-                        message="Missing block comment file header (/* */)."
-                    )
-                )
-                return violations
+        if first_non_empty_idx == -1:
+            return violations
 
-            header_text = getattr(first_block_comment, 'text', '') or ""
-            start_offset = getattr(first_block_comment, 'start', 0)
-            header_start_line = self._line_for_byte_offset(source_bytes, start_offset)
+        first_line = lines[first_non_empty_idx].strip()
+        actual_line_num = first_non_empty_idx + 1
 
-            return self._check_header_content(header_text, file_path, header_start_line, context)
-
-        lines = file_content.splitlines()
-        header_start = -1
-        for i, line in enumerate(lines[:50]):
-            stripped = line.strip()
-            if not stripped or stripped.startswith("//"):
-                continue
-            if stripped.startswith("/*"):
-                header_start = i
-                break
-            else:
-                break
-
-        if header_start == -1:
+        if not first_line.startswith("/*"):
             violations.append(
                 self.create_violation(
                     file_path=file_path,
-                    line=1,
-                    message="Missing block comment file header (/* */)."
+                    line=actual_line_num,
+                    message="Missing block comment file header (/* */). Every file must begin with a block comment header.",
+                    severity=RuleSeverity.ERROR
                 )
             )
             return violations
 
         header_lines = []
-        for line in lines[header_start:]:
-            header_lines.append(line)
-            if "*/" in line:
-                break
+        in_header = False
+        header_start_line = actual_line_num
+
+        for idx in range(first_non_empty_idx, len(lines)):
+            line = lines[idx]
+            if not in_header:
+                if "/*" in line:
+                    in_header = True
+                    header_lines.append(line)
+                    if "*/" in line and line.find("*/") > line.find("/*"):
+                        break
+            else:
+                header_lines.append(line)
+                if "*/" in line:
+                    break
 
         header_text = "\n".join(header_lines)
-        return self._check_header_content(header_text, file_path, header_start + 1, context)
+        violations.extend(self._check_header_content(header_text, file_path, header_start_line, context))
+
+        return violations

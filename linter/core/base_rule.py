@@ -153,7 +153,8 @@ class BaseRule(ABC):
         return self.default_severity()
     
     def create_violation(self, file_path: str, line: int, message: str, 
-                        column: int = 0, context: Optional[str] = None) -> RuleViolation:
+                        column: int = 0, context: Optional[str] = None,
+                        severity: Optional[RuleSeverity] = None) -> RuleViolation:
         """
         Helper method to create a RuleViolation with this rule's configuration
         
@@ -163,6 +164,7 @@ class BaseRule(ABC):
             message: Violation message
             column: Column number (default: 0)
             context: Additional context (default: None)
+            severity: Optional severity override (default: self.severity)
         
         Returns:
             Configured RuleViolation object
@@ -171,7 +173,7 @@ class BaseRule(ABC):
             file=file_path,
             line=line,
             column=column,
-            severity=self.severity,
+            severity=severity if severity is not None else self.severity,
             message=message,
             rule_id=self.rule_id,
             context=context

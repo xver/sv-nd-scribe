@@ -45,6 +45,18 @@
       {
         "command": "sv-nd-scribe.fixRule",
         "title": "SV_Scribe: Fix specific rule in file"
+      },
+      {
+        "command": "sv-nd-scribe.overwriteHeaderFromTemplate",
+        "title": "SV_Scribe: Overwrite File Header from Template"
+      },
+      {
+        "command": "sv-nd-scribe.openHeaderTemplate",
+        "title": "SV_Scribe: Open Header Template to Edit"
+      },
+      {
+        "command": "sv-nd-scribe.resetHeaderTemplate",
+        "title": "SV_Scribe: Reset Header Template to Default"
       }
     ],
     "configuration": {

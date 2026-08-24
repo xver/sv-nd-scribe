@@ -12,16 +12,13 @@ class FixWkl005(BaseFixer):
         self,
         violation: Dict[str, Any],
         source_lines: List[str],
-        config: Dict[str, Any] = None, **kwargs,
+        config: Dict[str, Any] = None,
+        **kwargs,
     ) -> Optional[FixProposal]:
         if not source_lines:
             return None
 
-        last_line = source_lines[-1]
-        fixed = last_line.rstrip("\r\n") + "\n"
-
-        # Also handle the case where the file has multiple trailing blank lines
-        # Strip all trailing blank lines, keep exactly one trailing newline
+        # Strip all trailing blank lines
         trimmed = list(source_lines)
         while trimmed and trimmed[-1].strip() == "":
             trimmed.pop()
@@ -29,42 +26,35 @@ class FixWkl005(BaseFixer):
         if not trimmed:
             return None
 
-        last_non_empty = trimmed[-1]
+        last_non_empty_idx = len(trimmed) - 1
+        last_non_empty = trimmed[last_non_empty_idx]
         fixed_last = last_non_empty.rstrip("\r\n") + "\n"
 
-        # Build the replacement: trimmed content with exactly one trailing newline
-        # We return a proposal that replaces the last line only if it's simple,
-        # or propose a full replacement block if there are extra blank lines.
-        if len(trimmed) == len(source_lines) and last_line == fixed_last:
-            # File already ends correctly
-            return None
+        # Case 1: Extra trailing blank lines exist
+        if len(trimmed) < len(source_lines):
+            # Replace from the last non-empty line through the end of the file
+            # with just the single properly-terminated last line.
+            return FixProposal(
+                rule_id="WKL-005",
+                file=violation["file"],
+                line=len(trimmed),
+                description="Remove extra trailing blank lines and ensure single EOF newline",
+                patch_lines=[fixed_last],
+                replace_range=(len(trimmed), len(source_lines)),
+                is_safe=True,
+            )
 
-        if len(trimmed) == len(source_lines):
-            # Just the last line needs a newline appended
+        # Case 2: No extra blank lines, but last line is missing trailing newline
+        last_line = source_lines[-1]
+        if last_line != fixed_last:
             return FixProposal(
                 rule_id="WKL-005",
                 file=violation["file"],
                 line=len(source_lines),
                 description="Append missing newline at end of file",
                 patch_lines=[fixed_last],
-                replace_line=last_line,
+                replace_range=(len(source_lines), len(source_lines)),
                 is_safe=True,
             )
 
-        # Extra trailing blank lines: replace the last real line + remove blanks.
-        # We do this by replacing source_lines[len(trimmed)-1:] with [fixed_last].
-        # Since FixProposal only handles single-line patches, we handle by
-        # using line = len(trimmed) and inserting nothing extra; the caller
-        # apply_proposals_in_memory will replace that line and leave the
-        # trailing lines intact. We instead mark the violation line as the
-        # first trailing blank and use replace_line to collapse them.
-        # Simplest safe approach: report the last non-empty line for replacement.
-        return FixProposal(
-            rule_id="WKL-005",
-            file=violation["file"],
-            line=len(source_lines),
-            description="Remove extra trailing blank lines and ensure single EOF newline",
-            patch_lines=[fixed_last],
-            replace_line=source_lines[-1],
-            is_safe=True,
-        )
+        return None
