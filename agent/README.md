@@ -2,6 +2,9 @@
 
 ![sv-nd-scribe Logo](../scribe_logo.jpg)
 
+← [Back to main README](../README.md)
+
+
 The **SV ND Scribe AI Agent** is an automated code fixer and AI assistant integration layer built on top of the SystemVerilog NaturalDocs static linter. It analyzes linter diagnostics and applies safe deterministic fixes, generates intelligent docstrings with LLMs, and exposes standard Model Context Protocol (MCP) tools for modern AI coding environments.
 
 ---

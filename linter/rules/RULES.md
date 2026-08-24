@@ -2,6 +2,9 @@
 
 ![sv-nd-scribe Logo](../../scribe_logo.jpg)
 
+← [Back to main README](../../README.md)
+
+
 The linter enforces two categories of rules. Each violation is reported with a **severity** (`[ERROR]` or `[WARNING]`), a **rule ID**, and a descriptive message.
 
 ---

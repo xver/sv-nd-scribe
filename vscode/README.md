@@ -2,6 +2,9 @@
 
 ![sv-nd-scribe Logo](../scribe_logo.jpg)
 
+← [Back to main README](../README.md)
+
+
 Real-time SystemVerilog in-editor diagnostic feedback and automated Quick Fix actions utilizing the **SV ND Scribe** linter and AI agent.
 
 ## Features

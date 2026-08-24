@@ -50,8 +50,12 @@ To use the static linter and agent, ensure the following are installed:
 
 The `makedir/` directory contains automation targets for linting, documentation, testing, and IDE configuration:
 
+
 ```bash
 cd makedir
+
+# Auto-configure workspace environment (.vscode/settings.json, .env, shell env)
+make setup_workspace
 
 # Check environment health
 make status
@@ -62,11 +66,6 @@ make agent_status
 # Lint production template files
 make lint
 
-# Auto-configure workspace environment (.vscode/settings.json, .env, shell env)
-make setup_workspace
-
-# Build and package the VS Code extension
-make vscode NEW=1
 ```
 
 *For complete Makefile options, see [Running the Linter](linter/README.md#cli-command-reference).*

@@ -2,6 +2,9 @@
 
 ![sv-nd-scribe Logo](../scribe_logo.jpg)
 
+← [Back to main README](../README.md)
+
+
 The **SV ND Scribe Linter** is a fast, standalone static analysis tool for SystemVerilog source code. It validates NaturalDocs documentation formatting and team-wide SystemVerilog coding conventions using AST analysis powered by Verible (`verible-verilog-syntax`).
 
 ---

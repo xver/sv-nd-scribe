@@ -2,6 +2,9 @@
 
 ![sv-nd-scribe Logo](../scribe_logo.jpg)
 
+← [Back to main README](../README.md)
+
+
 The `skills/` directory contains 12 modular documentation skills designed for developers and AI assistants (Antigravity, Cursor, Claude, LLMs). Each skill specifies syntactic patterns, comment formats, parameter tags, and priority guidelines according to the NaturalDocs specification for SystemVerilog.
 
 ---
