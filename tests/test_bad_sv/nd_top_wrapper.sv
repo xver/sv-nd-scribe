@@ -6,8 +6,7 @@
 
 `define small_macro 1
 
-//Module: nd_top_wrapper
-//Top wrapper module
+
 module nd_top_wrapper;
 	wire a, b;
   assign a = b;
