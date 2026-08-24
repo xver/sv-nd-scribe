@@ -7,8 +7,7 @@
 `ifndef ND_MONITOR_SV
 `define ND_MONITOR_SV
 
-//Class: nd_monitor
-//Monitor class description
+
 class nd_monitor extends uvm_monitor;
   `uvm_component_utils(nd_monitor)
 

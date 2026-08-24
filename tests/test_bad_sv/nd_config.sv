@@ -1,12 +1,7 @@
-/*
- * File: wrong_filename.sv
- * Company: IC Verimeter
- * Author: Developer <dev@verimeter.com>
- * Description: Test configuration class with missing documentation and style violations
- */
 
 `ifndef ND_CONFIG_SV
 `define ND_CONFIG_SV
+
 
 class nd_config extends uvm_object;
   `uvm_object_utils(nd_config)
