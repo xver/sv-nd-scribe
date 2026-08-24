@@ -4,13 +4,9 @@
  * Description: Transaction class with missing coverage documentation
  */
 
-`ifndef ND_TRANSACTION_SV
-`define ND_TRANSACTION_SV
 
 `define MAX_TRANSACTIONS 100
 
-//Class: nd_transaction
-//Transaction class description
 class nd_transaction extends uvm_sequence_item;
   `uvm_object_utils(nd_transaction)
 
