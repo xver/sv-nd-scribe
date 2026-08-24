@@ -8,19 +8,7 @@
 `ifndef ND_DUT_SV
 `define ND_DUT_SV
 
-// Module: nd_dut
-// TODO: Add description for module 'nd_dut'
-//
-// Parameters:
-//   DATA_WIDTH - Description for DATA_WIDTH
-//   ADDR_WIDTH - Description for ADDR_WIDTH
-//
-// Ports:
-//   clk - Description for clk
-//   rst_n - Description for rst_n
-//   addr - Description for addr
-//   wdata - Description for wdata
-//   rdata - Description for rdata
+
 module nd_dut #(
   parameter int DATA_WIDTH = 32,
   parameter int ADDR_WIDTH = 16
