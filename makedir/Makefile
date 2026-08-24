@@ -1,4 +1,4 @@
-.PHONY: all nd lint lint_bad status vscode help
+.PHONY: all nd lint lint_bad status vscode setup_workspace config_vscode vsconfig help
 
 MANIFEST := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))template_sv.f
 MANIFEST_BAD := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))test_bad_sv.f
@@ -48,8 +48,8 @@ vscode:
 	fi
 	cd ../vscode && npx -y @vscode/vsce package
 
-config_vscode vsconfig:
-	$(PYTHON) $(CURDIR)/configure_vscode.py
+setup_workspace config_vscode vsconfig:
+	$(PYTHON) $(CURDIR)/setup_workspace.py
 
 help:
 	@echo ""
@@ -61,8 +61,9 @@ help:
 	@echo "  lint           Lint production template files (template_sv.f)"
 	@echo "  lint_bad       Lint negative-test files (test_bad_sv.f), used to verify all rules fire"
 	@echo "  status         Check linter environment and dependencies"
-	@echo "  vscode         Compile and package the VS Code extension (.vsix)"
-	@echo "  config_vscode  Automatically configure .vscode/settings.json for this project"
+	@echo "  vscode          Compile and package the VS Code extension (.vsix)"
+	@echo "  setup_workspace Configure workspace env: shell env.sh, .env, terminal vars, and IDE settings"
+	@echo "                  (aliases: config_vscode, vsconfig)"
 	@echo "  help           Show this help message"
 	@echo ""
 	@echo "Variables (override on command line, e.g. make lint PYTHON=python3.11):"

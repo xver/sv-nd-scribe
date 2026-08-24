@@ -1,6 +1,10 @@
-# Linting Rules
+# Linting Rules ![](https://raw.githubusercontent.com/xver/icecream_sv/main/doc/IcVerimeter_logo.png) [![](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/xver)
+
+![sv-nd-scribe Logo](../../scribe_logo.jpg)
 
 The linter enforces two categories of rules. Each violation is reported with a **severity** (`[ERROR]` or `[WARNING]`), a **rule ID**, and a descriptive message.
+
+---
 
 ## Wellknown Rules (WKL)
 
@@ -17,6 +21,8 @@ Style and formatting rules that apply to all SystemVerilog files.
 | WKL-007  | **WARNING** | Lines must not exceed the maximum allowed length (default: 120 characters). |
 | WKL-008  | ERROR       | Tab characters (`\t`) are not allowed; use spaces instead. |
 | WKL-009  | ERROR       | Each data/net declaration statement must declare only one variable. |
+
+---
 
 ## NaturalDocs Rules (ND)
 
@@ -56,3 +62,16 @@ Documentation rules that enforce [NaturalDocs](https://www.naturaldocs.org/) com
 | ND-030   | *(Disabled)* | *(Deprecated) Method documentation belongs on declarations inside class bodies, not out-of-body implementations.* |
 | ND-031   | ERROR    | Clocking block declarations must be preceded by a `// Clocking: <name>` NaturalDocs comment. |
 | ND-032   | ERROR    | Modport declarations must be preceded by a `// Modport: <name>` NaturalDocs comment. |
+
+---
+
+## Support
+
+For assistance with integration or customization, contact us at [icshunt.help@gmail.com](mailto:icshunt.help@gmail.com).
+
+Report bugs and feature requests to [GitHub Issues](https://github.com/xver/sv-nd-scribe/issues).
+
+---
+
+![img](https://raw.githubusercontent.com/xver/icecream_sv/main/doc/IcVerimeter_logo.png) [![img](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/xver)
+Copyright (c) 2026 IC Verimeter

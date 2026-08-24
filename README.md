@@ -4,229 +4,178 @@
 
 Never write undocumented or unformatted SystemVerilog again.
 
-The **sv-nd-scribe** toolkit combines NaturalDocs-based documentation rules, a static linter for detecting issues in source files, a VS Code extension for real-time in-editor feedback, and an AI agent that helps resolve issues identified by the linter. **sv-nd-scribe** is available under the MIT License and can be used without restriction in both open-source and commercial applications.
+The **sv-nd-scribe** toolkit combines NaturalDocs-based documentation rules, a static linter for detecting issues in source files, an AI agent with deterministic and LLM-assisted auto-fixers, a Model Context Protocol (MCP) server for AI assistants/IDEs, a curated knowledge base of SystemVerilog documentation skills, and a VS Code extension for real-time in-editor feedback. **sv-nd-scribe** is available under the MIT License and can be used without restriction in both open-source and commercial applications.
 
-Also, check out other open-source projects by IC Verimeter.
+Also, check out other open-source projects by IC Verimeter:
 
 - [The Shunt](https://github.com/xver/Shunt): An Open Source Client/Server TCP/IP socket-based communication library designed for integrating SystemVerilog simulations with external applications in C, SystemC, and Python.
 - [SVDB Gateway](https://github.com/xver/svdb_gateway): A bridge between SystemVerilog and SQLite databases, allowing SystemVerilog code to interact with SQLite through the Direct Programming Interface (DPI).
 - [icecream_sv](https://github.com/xver/icecream_sv): IceCream for SystemVerilog!
 
-## Why use sv-nd-scribe?
+---
 
-* **Consistent Documentation**: Enforce NaturalDocs rules across your SystemVerilog files.
-* **Real-time Feedback**: Use the VS Code extension for on-the-fly linting and quick-fixes.
-* **Lightweight & Portable**: Standard Python implementation, fits seamlessly into Makefiles.
-* **AI Assistance**: AI agent with deterministic and LLM-assisted options to resolve issues and generate missing comments automatically.
+## Documentation Map
+
+Each core subsystem of **sv-nd-scribe** has its own dedicated documentation:
+
+| Component | Description | Documentation Link |
+|---|---|---|
+| 🔍 **Static Linter** | AST-based static analyzer with `.f` manifest and JSON output support | [**`linter/README.md`**](linter/README.md) |
+| 📋 **Linting Rules** | Full catalog of all 41 Wellknown (WKL) and NaturalDocs (ND) rules | [**`linter/rules/RULES.md`**](linter/rules/RULES.md) |
+| 🤖 **AI Agent & Auto-Fixer** | Deterministic syntax engine, LLM backends, template manager, and Python API | [**`agent/README.md`**](agent/README.md) |
+| 🔌 **MCP Server** | Model Context Protocol server exposing lint, check, and fix tools to AI IDEs | [**`agent/README.md#model-context-protocol-mcp-server`**](agent/README.md#model-context-protocol-mcp-server) |
+| 📚 **Skills Knowledge Base** | 12 reference guides and keyword tables for SystemVerilog documentation | [**`skills/README.md`**](skills/README.md) |
+| 💻 **VS Code Extension** | Real-time diagnostics, Lightbulb (`Ctrl+.`) Quick-Fixes, and header tools | [**`vscode/README.md`**](vscode/README.md) |
 
 ---
 
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Running the Linter](#running-the-linter)
-  - [Makefile Usage](#makefile-usage)
-  - [Standalone CLI Execution](#standalone-cli-execution)
-  - [Manifest File Format (.f)](#manifest-file-format-f)
-  - [Usage in Python](#usage-in-python)
-- [Linting Rules](#linting-rules)
-- [VS Code Extension](#vs-code-extension)
-  - [Option 1: Install from Extension View (TODO)](#option-1-install-from-extension-view-todo)
-  - [Option 2: Install from the pre-built .vsix](#option-2-install-from-the-pre-built-vsix)
-  - [Extension Configuration](#extension-configuration)
-- [AI Agent](#ai-agent)
-- [Support](#support)
-
 ## Prerequisites
 
-To use the static linter, you must have the following installed:
+To use the static linter and agent, ensure the following are installed:
 
-1. **Python 3** (3.7+)
+1. **Python 3** (3.8+)
 2. **Verible** - specifically the `verible-verilog-syntax` executable.
-   - You can download Verible from the [ChipsAlliance GitHub releases page](https://github.com/chipsalliance/verible/releases).
-   - Ensure the executable (`verible-verilog-syntax` or `verible-verilog-syntax.exe`) is available in your system's `PATH`.
-   - Alternatively, you can specify its location by setting the `VERIBLE_HOME` environment variable to the directory where it's installed (the linter will look in `$VERIBLE_HOME/bin/` and `$VERIBLE_HOME/`).
-   - *Note: If you're running this in WSL, a Windows installation of Verible (.exe) in your PATH is fully supported.*
+   - Download Verible from the [ChipsAlliance GitHub releases page](https://github.com/chipsalliance/verible/releases).
+   - Ensure `verible-verilog-syntax` (or `verible-verilog-syntax.exe`) is available in your system `PATH` (or set `VERIBLE_HOME`).
+   - *Note: In WSL, a Windows installation of Verible (.exe) in your PATH is fully supported.*
 3. **SVND_SCRIBE_HOME** (Mandatory)
-   - Set this environment variable to the root directory of this downloaded repository.
-   - The VS Code extension and other tools require this variable to locate the linter scripts and configurations.
+   - Set this environment variable to the root directory of the `sv-nd-scribe` repository.
+   - Example: `export SVND_SCRIBE_HOME=~/proj/sv-nd-scribe` (or source [`makedir/env.sh`](makedir/env.sh)).
 
-## Running the Linter
+---
 
-### Makefile Usage
+## Quick Start
 
-A `Makefile` is provided in the `makedir/` directory for convenient project-level automation. Run all targets from inside `makedir/`:
+### 1. Automation via Makefile
+
+The `makedir/` directory contains automation targets for linting, documentation, testing, and IDE configuration:
 
 ```bash
 cd makedir
-make <target>
+
+# Check environment health
+make status
+
+# Check AI agent status and LLM connectivity
+make agent_status
+
+# Lint production template files
+make lint
+
+# Auto-configure workspace environment (.vscode/settings.json, .env, shell env)
+make setup_workspace
+
+# Build and package the VS Code extension
+make vscode NEW=1
 ```
 
-| Target      | Description |
-|-------------|-------------|
-| `all`       | Runs both `nd` (NaturalDocs generation) and `lint` (production files). |
-| `nd`        | Generates NaturalDocs HTML documentation from `docs/nd_config/`. Requires `ND_HOME` to be set. |
-| `lint`      | Lints the production template files listed in `template_sv.f`. Exits non-zero on errors. |
-| `lint_bad`  | Lints the negative-test files in `test_bad_sv.f`. Used to verify that all rules are triggered. |
-| `status`    | Checks the linter environment and verifies all dependencies are satisfied. |
-| `vscode`    | Compiles and packages the VS Code extension into a `.vsix` file. |
-| `help`      | Displays a formatted summary of all Makefile targets and configurable variables. |
+*For complete Makefile options, see [Running the Linter](linter/README.md#cli-command-reference).*
 
-**Variables** (can be overridden on the command line):
+---
 
-| Variable     | Default          | Description |
-|--------------|------------------|-------------|
-| `ND_HOME`    | *(env var)*      | Path to the NaturalDocs installation directory (must contain the `NaturalDocs` executable). |
-| `PYTHON`     | `python3`        | Python interpreter to use when running the linter. |
-| `LOG_FILE`   | `linter.log`     | Output log file for the `lint` target. |
-| `LOG_BAD_FILE` | `linter_bad.log` | Output log file for the `lint_bad` target. |
+### 2. Running the Static Linter
 
-**Example:**
-```bash
-# Generate docs + lint production files
-make all
-
-# Lint with a custom Python path and log file
-make lint PYTHON=/usr/bin/python3.11 LOG_FILE=my_run.log
-
-# Verify all negative-test rules fire
-make lint_bad
-```
-
-### Standalone CLI Execution
-
-You can run the linter directly from the command line against your source files by executing `python3 -m linter` or `linter/linter.py`.
+Lint individual files or batch process manifests using standard `.f` files:
 
 ```bash
-# Display help information
-python3 -m linter --help
-
-# Check linter environment and dependencies
+# Check dependencies
 python3 -m linter --status
 
-# Run against one or more files
-python3 -m linter example/good_example.sv path/to/other_file.sv
+# Lint specific SystemVerilog files
+python3 -m linter src/my_module.sv src/my_if.sv
 
-# Run in batch mode using a .f manifest file
-python3 -m linter -f example/manifest.f
-
-# Run with a custom JSON configuration file
-python3 -m linter -f example/manifest.f -c configs/lint_config.json
-
-# Output results in JSON format
-python3 -m linter -f example/manifest.f --json
+# Batch lint with manifest
+python3 -m linter -f makedir/template_sv.f
 ```
 
-### Manifest File Format (.f)
+👉 **Full linter documentation**: [**`linter/README.md`**](linter/README.md)  
+👉 **Complete rule catalog (41 rules)**: [**`linter/rules/RULES.md`**](linter/rules/RULES.md)
 
-The `.f` manifest file allows batch processing. The parser supports:
-* One file path per line (resolved relative to the command execution directory or the manifest file directory).
-* Environment variable expansion (e.g. `$MY_PROJECT/src/file.sv`).
-* Inline and block comments starting with `//` or `#`.
-* Ignoring compiler flags (lines starting with `+` or `-`).
+---
 
-This script also works if you invoke it from outside the project directory:
+### 3. Running the AI Fixer Agent
 
-```bash
-# Run from any directory
-python3 -m linter -f /path/to/manifest.f
-```
-
-### Usage in Python
-
-See [linter/PYTHON_USAGE.md](linter/PYTHON_USAGE.md) for a guide on integrating the linter into your own Python scripts.
-
-## Linting Rules
-
-The linter enforces 40 rules across two categories: **Wellknown (WKL)** style/formatting rules (8 rules) and **NaturalDocs (ND)** documentation rules (32 rules).
-
-See the full rule reference: [linter/rules/RULES.md](linter/rules/RULES.md)
-
-## VS Code Extension
-
-For full details, see the [VS Code Extension README](vscode/README.md).
-
-A pre-built VS Code extension is included in the `vscode/` directory. It provides real-time in-editor diagnostics for SystemVerilog files by running the linter on every file save.
-
-### Option 1: Install from Extension View *(TODO)*
-
-> **TODO**: The extension is not yet published.
-
-Once published, you will be able to download and install the extension directly from IDEs (VS Code, Antigravity, Cursor, etc.) by searching for **SV ND Scribe** in the Extensions view (`Ctrl+Shift+X`) and clicking **Install**.
-
-### Option 2: Install from the pre-built .vsix
-
-The packaged extension file is located at `vscode/sv-nd-scribe-vscode-*.vsix`.
-
-**Via VS Code UI:**
-1. Open VS Code.
-2. Press `Ctrl+Shift+P` (macOS: `Cmd+Shift+P`) to open the Command Palette.
-3. Type and select **`Extensions: Install from VSIX...`**.
-4. Browse to `sv-nd-scribe/vscode/sv-nd-scribe-vscode-*.vsix` and click **Install**.
-5. Reload VS Code when prompted.
-
-**Via the command line:**
-```bash
-code --install-extension /path/to/sv-nd-scribe/vscode/sv-nd-scribe-vscode-*.vsix
-```
-
-### Extension Configuration
-
-After installation, configure the extension via VS Code Settings (`Ctrl+,`) by searching for `sv-nd-scribe`:
-
-| Setting | Default | Description |
-|---|---|---|
-| `sv-nd-scribe.linterPath` | `""` | Absolute path to `linter.py`. If empty, it automatically falls back to `$SVND_SCRIBE_HOME/linter/linter.py`. |
-| `sv-nd-scribe.pythonPath` | `python3` | Path to your Python interpreter |
-| `sv-nd-scribe.runOn` | `onSave` | When to trigger linting: `onSave` or `onOpen` |
-| `sv-nd-scribe.agentLlmProvider` | `none` | LLM backend selection for AI quick-fixes (`none`, `openai`, `ollama`) |
-| `sv-nd-scribe.agentLlmModel` | `""` | Model name override (e.g. `llama3.2`, `gpt-4o-mini`) |
-| `sv-nd-scribe.agentFixMode` | `interactive` | Default fix mode for agent command execution (`interactive`, `batch`, `dryRun`) |
-| `sv-nd-scribe.agentBackup` | `auto` | Backup strategy when modifying files (`auto`, `always`, `never`) |
-| `sv-nd-scribe.agentShowDiffPreview` | `true` | Show diff preview panel before applying AI fixes |
-
-### Extension Commands
-
-In addition to automatically linting in the background, you can manually trigger the following actions via the VS Code Command Palette (`Ctrl+Shift+P`):
-
-- **`SV_Scribe: Lint`**: Lints the currently active SystemVerilog file immediately.
-- **`SV_Scribe: Clear`**: Clears any diagnostic underlines from the current document.
-- **`SV_Scribe: Lint_All`**: Runs the linter across every SystemVerilog file you currently have open in your workspace.
-- **`SV_Scribe: Status`** (alias: **`SV_Scribe: Verify linter installation`**): Verifies your environment by checking if the linter script exists and if its dependencies are satisfied.
-- **`SV_Scribe: Fix Current File`**: Runs the AI Agent to analyze and fix issues in the active document.
-- **`SV_Scribe: Batch Fix Current File`**: Applies all safe deterministic fixes to the active document without prompting.
-- **`SV_Scribe: Show Agent Status`**: Displays the AI agent status, backend LLM provider, and loaded rules/skills.
-
-## AI Agent
-
-The **SV ND Scribe AI Agent** automatically analyzes linter violations and applies or proposes NaturalDocs documentation and formatting fixes directly in SystemVerilog source files. It features a portable, multi-LLM backend (`none`, `openai`, `ollama`) and data-driven rule/skill definitions.
-
-### CLI Usage
+Automatically resolve linter violations using high-speed deterministic transforms or LLMs:
 
 ```bash
-# Deterministic batch fix (CI mode, no backup files)
-python3 -m agent --llm none --batch --no-backup -f manifest.f
-
-# Check agent connectivity and status
+# Check agent health
 python3 -m agent --status
 
-# Preview proposed fixes without writing to disk
-python3 -m agent --llm none --dry-run file.sv
+# Deterministic batch fix (CI/CD mode, no backups)
+python3 -m agent --llm none --batch --no-backup -f makedir/template_sv.f
+
+# Dry-run preview: display proposed diffs without writing to disk
+python3 -m agent --dry-run tests/test_bad_sv/nd_driver.sv
+
+# Re-apply corporate header template
+python3 -m agent --overwrite-header src/my_module.sv
 ```
 
-### VS Code Quick-Fixes
+👉 **Full AI agent and CLI guide**: [**`agent/README.md`**](agent/README.md)
 
-When editing SystemVerilog files in VS Code, clicking the lightbulb icon (`Ctrl+.`) on any diagnostic presents quick-fixes:
-- **`💡 SV_Scribe: Fix (deterministic)`**: Instantly applies deterministic formatting/comment fixes without calling an LLM.
-- **`🤖 SV_Scribe: Fix with AI (<provider>)`**: Uses configured LLM backend for intelligent description generation.
+---
+
+### 4. Model Context Protocol (MCP) Server
+
+Connect `sv-nd-scribe` tools directly to AI assistants and IDEs (Antigravity, Cursor, Claude Desktop, VS Code MCP):
+
+```json
+{
+  "mcpServers": {
+    "sv-nd-scribe": {
+      "command": "python3",
+      "args": ["-m", "agent.mcp_server"],
+      "env": {
+        "SVND_SCRIBE_HOME": "/path/to/sv-nd-scribe"
+      }
+    }
+  }
+}
+```
+
+*Tools provided: `list_violations`, `check_file`, `fix_file`, `get_status`.*
+
+👉 **MCP Server guide and tool reference**: [**`agent/README.md#model-context-protocol-mcp-server`**](agent/README.md#model-context-protocol-mcp-server)
+
+---
+
+### 5. NaturalDocs Skills Knowledge Base
+
+A library of 12 modular skills defining syntactic standards and comment structures:
+
+* **File & Containers**: [`file_header`](skills/file_header/SKILL.md), [`sv_constructs`](skills/sv_constructs/SKILL.md), [`group_heading`](skills/group_heading/SKILL.md)
+* **Methods & Logic**: [`function_task`](skills/function_task/SKILL.md), [`process_assign`](skills/process_assign/SKILL.md), [`assertion_property`](skills/assertion_property/SKILL.md)
+* **Data & Types**: [`type_doc`](skills/type_doc/SKILL.md), [`variable_doc`](skills/variable_doc/SKILL.md), [`inline_doc`](skills/inline_doc/SKILL.md), [`coverage_doc`](skills/coverage_doc/SKILL.md)
+* **Conventions & Priority**: [`nd_comment`](skills/nd_comment/SKILL.md), [`triage`](skills/triage/SKILL.md)
+
+👉 **Full skills catalog & keyword tables**: [**`skills/README.md`**](skills/README.md)
+
+---
+
+### 6. VS Code Extension
+
+Install the packaged extension for in-editor linting, Lightbulb (`Ctrl+.`) Quick-Fix actions, and header template management:
+
+```bash
+# Install the extension
+code --install-extension vscode/sv-nd-scribe-vscode-0.1.4.vsix
+
+# Configure workspace environment: .vscode/settings.json, .env, shell env variables
+cd makedir && make setup_workspace
+```
+
+👉 **Full VS Code extension guide**: [**`vscode/README.md`**](vscode/README.md)
+
+---
 
 ## Support
 
 For assistance with integration or customization, contact us at [icshunt.help@gmail.com](mailto:icshunt.help@gmail.com).
 
-Report bugs to [Issues](https://github.com/xver/sv-nd-scribe/issues).
+Report bugs and feature requests to [GitHub Issues](https://github.com/xver/sv-nd-scribe/issues).
 
 ---
 
 ![img](https://raw.githubusercontent.com/xver/icecream_sv/main/doc/IcVerimeter_logo.png) [![img](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/xver)
 Copyright (c) 2026 IC Verimeter
+
