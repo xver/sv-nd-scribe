@@ -3,6 +3,7 @@
 
 import os
 import sys
+import json
 import argparse
 
 # Add parent directory to path so agent can be executed via python3 -m agent
@@ -10,6 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from agent.agent import ScribeAgent
 from agent.fixer.base_fixer import LinterError
+from agent.setup_agent import SetupAgent
 
 def parse_manifest_file(manifest_path: str) -> list:
     files = []
@@ -47,6 +49,8 @@ def main():
     parser.add_argument("--debug-llm", action="store_true", help="Dump LLM prompts and raw responses to log file")
     parser.add_argument("-c", "--config", help="Path to configuration file (JSON)")
     parser.add_argument("--status", action="store_true", help="Check LLM connectivity and active skill/rule paths")
+    parser.add_argument("--doctor", action="store_true", help="Diagnose environment, dependencies, and workspace setup")
+    parser.add_argument("--fix-setup", action="store_true", help="Automatically repair workspace configuration and environment")
     parser.add_argument("--open-header-template", action="store_true", help="Print path and content of active header_template.txt")
     parser.add_argument("--reset-header-template", action="store_true", help="Reset active header_template.txt to built-in default")
     parser.add_argument("--overwrite-header", action="store_true", help="Force overwrite file header from template")
@@ -57,6 +61,27 @@ def main():
     if args.skills_dir or args.rules_dir:
         print("[agent] Error: --skills-dir and --rules-dir overrides are Phase 2 features and not supported in Phase 1 MVP.", file=sys.stderr)
         sys.exit(1)
+
+    if args.doctor:
+        setup_agent = SetupAgent()
+        exit_code = setup_agent.print_doctor_report(as_json=args.json)
+        sys.exit(exit_code)
+
+    if args.fix_setup:
+        setup_agent = SetupAgent()
+        res = setup_agent.fix_setup()
+        if args.json:
+            print(json.dumps(res, indent=2))
+        else:
+            print("=================================================================")
+            print("  SV ND Scribe — Setup Auto-Repair")
+            print("=================================================================")
+            for act in res.get("actions", []):
+                print(f"  • {act}")
+            print()
+            exit_code = setup_agent.print_doctor_report(as_json=False)
+            print("=================================================================")
+        sys.exit(0 if res.get("success") else 1)
 
     agent = ScribeAgent(config_file=args.config)
 
@@ -84,7 +109,7 @@ def main():
         files_to_fix.extend(args.files)
 
     if not files_to_fix:
-        parser.error("No input files specified. Provide files as positional arguments or use -f/--file-list.")
+        parser.error("No input files specified. Provide files as positional arguments, use -f/--file-list, or run --doctor / --fix-setup.")
 
     rules_filter = None
     if args.rules:

@@ -23,13 +23,8 @@ _SV_ND_SCRIBE_PROJECT_CONFIG_WARNED = False
 
 
 def _sv_nd_scribe_config_warning_stream() -> TextIO:
-    """Use stderr when --json is present so stdout stays valid JSON; else stdout (visible in more IDEs)."""
-    try:
-        if "--json" in sys.argv:
-            return sys.stderr
-    except AttributeError:
-        pass
-    return sys.stdout
+    """Use sys.stderr for warnings and logs to prevent stdout pollution."""
+    return sys.stderr
 
 
 def resolve_sv_nd_scribe_project_config_dir(*, emit_unset_warning: bool = True) -> Path:

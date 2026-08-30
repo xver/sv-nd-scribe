@@ -2,8 +2,8 @@
   "name": "sv-nd-scribe-vscode",
   "displayName": "SV ND Scribe",
   "description": "SV ND Scribe: Real-time NaturalDocs documentation and formatting feedback for SystemVerilog",
-  "version": "0.1.4",
-  "icon": "scribe_logo.jpg",
+  "version": "0.1.5",
+  "icon": "scribe_logo.png",
   "publisher": "ic-verimeter",
   "engines": {
     "vscode": "^1.60.0"
@@ -101,6 +101,6 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/victo/sv-nd-scribe.git"
+    "url": "https://github.com/xver/sv-nd-scribe.git"
   }
 }

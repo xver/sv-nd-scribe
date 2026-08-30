@@ -1,0 +1,19 @@
+{
+  "project": {
+    "name": "sv-nd-scribe",
+    "company": "IC Verimeter",
+    "description": "SystemVerilog NaturalDocs & Wellknown Style Linter"
+  },
+  "linters": {
+    "naturaldoc": {
+      "enabled": true
+    },
+    "wellknown": {
+      "enabled": true
+    }
+  },
+  "global": {
+    "strict_mode": false,
+    "use_color": true
+  }
+}
