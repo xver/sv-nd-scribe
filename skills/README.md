@@ -5,7 +5,7 @@
 ← [Back to main README](../README.md)
 
 
-The `skills/` directory contains 12 modular documentation skills designed for developers and AI assistants (Antigravity, Cursor, Claude, LLMs). Each skill specifies syntactic patterns, comment formats, parameter tags, and priority guidelines according to the NaturalDocs specification for SystemVerilog.
+The `skills/` directory contains 13 modular documentation and troubleshooting skills designed for developers and AI assistants (Antigravity, Cursor, Claude, LLMs). Each skill specifies syntactic patterns, comment formats, parameter tags, and priority guidelines according to the NaturalDocs specification for SystemVerilog.
 
 ---
 
@@ -25,6 +25,7 @@ The `skills/` directory contains 12 modular documentation skills designed for de
 | **[`group_heading`](group_heading/SKILL.md)** | Group headings, section divisions, architectural blocks | `ND-006` | [View Skill](group_heading/SKILL.md) |
 | **[`nd_comment`](nd_comment/SKILL.md)** | NaturalDocs general syntax, colon spacing, comment styling, keyword table reference | `ND-003`, `ND-004`, `ND-005`, `ND-019` | [View Skill](nd_comment/SKILL.md) |
 | **[`triage`](triage/SKILL.md)** | Multi-rule conflict resolution, fix priority hierarchy, batch sequencing | All rules | [View Skill](triage/SKILL.md) |
+| **[`setup_troubleshooter`](setup_troubleshooter/SKILL.md)** | Environment diagnostics, dependency checking, workspace repair | Installation / Setup | [View Skill](setup_troubleshooter/SKILL.md) |
 
 ---
 

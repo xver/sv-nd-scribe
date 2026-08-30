@@ -8,6 +8,7 @@ Automatically configures:
   1. .vscode/settings.json (sv-nd-scribe settings, terminal env, file associations)
   2. .env file in the workspace root
   3. makedir/env.sh for sourcing in terminal shells
+  4. linter/configs/lint_config.json default configuration
 """
 
 import os
@@ -60,7 +61,7 @@ def write_env_file(env_path: str, env_vars: Dict[str, str]) -> None:
     """Write standard key=value .env file."""
     with open(env_path, "w", encoding="utf-8") as f:
         f.write("# SV ND Scribe Workspace Environment Variables\n")
-        f.write("# Generated automatically by makedir/configure_vscode.py\n\n")
+        f.write("# Generated automatically by makedir/setup_workspace.py\n\n")
         for k, v in env_vars.items():
             f.write(f"{k}={v}\n")
 
@@ -82,6 +83,35 @@ def write_env_sh(env_sh_path: str, env_vars: Optional[Dict[str, str]] = None) ->
         os.chmod(env_sh_path, 0o755)
     except Exception:
         pass
+
+def ensure_default_config(workspace_dir: str) -> None:
+    """Ensure linter/configs/lint_config.json exists with default settings."""
+    cfg_dir = os.path.join(workspace_dir, "linter", "configs")
+    os.makedirs(cfg_dir, exist_ok=True)
+    cfg_file = os.path.join(cfg_dir, "lint_config.json")
+    if not os.path.exists(cfg_file):
+        default_cfg = {
+            "project": {
+                "name": "sv-nd-scribe",
+                "company": "IC Verimeter",
+                "description": "SystemVerilog NaturalDocs & Wellknown Style Linter"
+            },
+            "linters": {
+                "naturaldoc": {
+                    "enabled": True
+                },
+                "wellknown": {
+                    "enabled": True
+                }
+            },
+            "global": {
+                "strict_mode": False,
+                "use_color": True
+            }
+        }
+        with open(cfg_file, "w", encoding="utf-8") as f:
+            json.dump(default_cfg, f, indent=2)
+            f.write("\n")
 
 def main():
     parser = argparse.ArgumentParser(
@@ -144,6 +174,9 @@ def main():
             else:
                 print("  No 'sv-nd-scribe.*' settings found.")
         sys.exit(0)
+
+    # Ensure linter/configs/lint_config.json is present
+    ensure_default_config(workspace_dir)
 
     # Determine paths
     if args.absolute:
