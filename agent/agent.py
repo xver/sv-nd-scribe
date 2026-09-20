@@ -20,6 +20,45 @@ class ScribeAgent:
     def __init__(self, config_file: Optional[str] = None):
         self.config_mgr = ConfigManager(config_file=config_file)
         self.agent_config = self.config_mgr.config.get("agent", {})
+        if not self.agent_config:
+            candidates = [
+                "agent_config.json",
+                ".sv-nd-scribe/config.json",
+                ".sv-nd-scribe/agent_config.json",
+            ]
+            for cand in candidates:
+                if os.path.isfile(cand):
+                    try:
+                        with open(cand, "r", encoding="utf-8") as f:
+                            d = json.load(f)
+                        if isinstance(d, dict) and "agent" in d:
+                            self.agent_config = d.get("agent", {})
+                            break
+                    except Exception:
+                        pass
+
+        # Also pull header settings from .vscode/settings.json if present
+        curr = os.getcwd()
+        for _ in range(10):
+            vsc_path = os.path.join(curr, ".vscode", "settings.json")
+            if os.path.isfile(vsc_path):
+                try:
+                    with open(vsc_path, "r", encoding="utf-8") as f:
+                        vsc = json.load(f)
+                    h_defs = self.agent_config.setdefault("header_defaults", {})
+                    if vsc.get("sv-nd-scribe.company"):
+                        h_defs["company"] = vsc["sv-nd-scribe.company"]
+                    if vsc.get("sv-nd-scribe.author"):
+                        h_defs["author"] = vsc["sv-nd-scribe.author"]
+                    if vsc.get("sv-nd-scribe.legal"):
+                        h_defs["legal"] = vsc["sv-nd-scribe.legal"]
+                    break
+                except Exception:
+                    pass
+            parent = os.path.dirname(curr)
+            if parent == curr:
+                break
+            curr = parent
         
         # Resolve home path for built-in skills and rules
         self.scribe_home = os.environ.get(

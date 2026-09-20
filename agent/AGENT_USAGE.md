@@ -90,6 +90,15 @@ Configure default file header parameters in `agent_config.json`:
 
 Any missing header field defaults to a `TODO_<FIELD>` placeholder sentinel line (e.g. `TODO_LEGAL`).
 
+### Author Resolution Order
+The `Author:` field resolves via a fallback cascade:
+1. Explicit config parameter (`agent.header_defaults.author`).
+2. Environment variable (`SV_ND_SCRIBE_AUTHOR`).
+3. VS Code settings (`sv-nd-scribe.author` in `.vscode/settings.json`).
+4. Project config file (`agent_config.json`).
+5. Git user config (`git config user.name` & `user.email`).
+6. Fallback: `TODO_AUTHOR` with setup instructions.
+
 ---
 
 ## VS Code Extension Integration
@@ -111,7 +120,7 @@ In VS Code:
 | Skill Directory | Applies To | Description |
 |---|---|---|
 | `nd_comment` | ND-004, ND-007–018, ND-020–022, ND-025–026, ND-028–032 | Full §27 keyword table; general NaturalDocs comment generation |
-| `file_header` | ND-001 | `/* */` header block with all required fields (§2) |
+| `file_header` | ND-001 | Header block (`/* */`, `//`, or mixed) with all required fields (§2) |
 | `group_heading` | ND-006 | `// Group:` section headings with standard name sets (§4) |
 | `function_task` | ND-017, ND-030 | Function/Task + Parameters/Returns + extern impl (§16–§18) |
 | `variable_doc` | ND-023, ND-012 | `// Variable:` for signals, ports, parameters (§9, §12) |

@@ -27,7 +27,7 @@ DEFAULT_BUILTIN_HEADER_TEMPLATE = """/******************************************
 class FileHeaderRule(BaseRule):
     """
     [ND-001] File Header Rule
-    Every `.sv` file MUST begin with a block comment header using `/* */` syntax
+    Every `.sv` file MUST begin with a header comment using `/* */` or `//` syntax
     and contain a `File:` NaturalDocs keyword line matching the file basename.
     """
 
@@ -37,7 +37,7 @@ class FileHeaderRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Every .sv file MUST begin with a block comment header using /* */ syntax containing 'File: <filename>'."
+        return "Every .sv file MUST begin with a header comment using /* */ or // syntax containing 'File: <filename>'."
 
     def default_severity(self) -> RuleSeverity:
         return RuleSeverity.ERROR
@@ -135,7 +135,7 @@ class FileHeaderRule(BaseRule):
         author_match = re.search(r"^\s*(?:\*|//|/\*|)\s*Author:\s*(.*)", header_text, re.IGNORECASE | re.MULTILINE)
         if author_match:
             author_val = author_match.group(1).strip()
-            if author_val and not re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", author_val):
+            if author_val and "TODO" not in author_val and not re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", author_val):
                 author_line = get_line_for_pattern(r"^\s*(?:\*|//|/\*|)\s*Author:")
                 violations.append(
                     self.create_violation(
@@ -164,7 +164,12 @@ class FileHeaderRule(BaseRule):
                     self.create_violation(
                         file_path=file_path,
                         line=cur_line,
-                        message=f"File header {field_name} field contains unresolved placeholder 'TODO_AUTHOR'.",
+                        message=(
+                            f"File header {field_name} field contains unresolved placeholder 'TODO_AUTHOR'. "
+                            "Please configure your author in VS Code Settings ('sv-nd-scribe.author'), "
+                            "agent_config.json ('agent.header_defaults.author'), or Git "
+                            "('git config --global user.name' and 'git config --global user.email')."
+                        ),
                         severity=RuleSeverity.WARNING
                     )
                 )
@@ -193,9 +198,61 @@ class FileHeaderRule(BaseRule):
         violations = []
         lines = content.splitlines()
 
-        if not lines:
+        if not lines or not content.strip():
             return violations
 
+        tokens = self._get_rawtokens(context)
+        if tokens:
+            source_bytes = self._source_bytes(content, context)
+            first_non_ws_token = None
+            first_idx = -1
+            for idx, t in enumerate(tokens):
+                if not self._is_whitespace_token(t):
+                    first_non_ws_token = t
+                    first_idx = idx
+                    break
+
+            if not first_non_ws_token:
+                return violations
+
+            if not self._is_comment_token(first_non_ws_token):
+                line_num = self._line_for_byte_offset(source_bytes, first_non_ws_token.start)
+                violations.append(
+                    self.create_violation(
+                        file_path=file_path,
+                        line=line_num,
+                        message="Missing block comment file header (/* */ or //). Every file must begin with a block comment header.",
+                        severity=RuleSeverity.ERROR
+                    )
+                )
+                return violations
+
+            header_tokens = []
+            consecutive_newlines = 0
+            for t in tokens[first_idx:]:
+                if self._is_comment_token(t):
+                    header_tokens.append(t)
+                    consecutive_newlines = 0
+                elif self._is_whitespace_token(t):
+                    nl_count = getattr(t, 'text', '').count('\n')
+                    consecutive_newlines += nl_count
+                    if consecutive_newlines > 1:
+                        # Blank line separates header block from subsequent comments/code
+                        break
+                else:
+                    # Non-comment, non-whitespace token reached
+                    break
+
+            if not header_tokens:
+                return violations
+
+            header_start_line = self._line_for_byte_offset(source_bytes, header_tokens[0].start)
+            header_end_line = self._line_for_byte_offset(source_bytes, header_tokens[-1].end)
+            header_text = "\n".join(lines[header_start_line - 1 : header_end_line])
+            violations.extend(self._check_header_content(header_text, file_path, header_start_line, context))
+            return violations
+
+        # Fallback when AST tokens are unavailable (e.g. standalone unit tests)
         first_non_empty_idx = -1
         for idx, line in enumerate(lines):
             if line.strip():
@@ -208,35 +265,40 @@ class FileHeaderRule(BaseRule):
         first_line = lines[first_non_empty_idx].strip()
         actual_line_num = first_non_empty_idx + 1
 
-        if not first_line.startswith("/*"):
+        if not (first_line.startswith("/*") or first_line.startswith("//")):
             violations.append(
                 self.create_violation(
                     file_path=file_path,
                     line=actual_line_num,
-                    message="Missing block comment file header (/* */). Every file must begin with a block comment header.",
+                    message="Missing block comment file header (/* */ or //). Every file must begin with a block comment header.",
                     severity=RuleSeverity.ERROR
                 )
             )
             return violations
 
         header_lines = []
-        in_header = False
-        header_start_line = actual_line_num
-
+        in_block = False
         for idx in range(first_non_empty_idx, len(lines)):
             line = lines[idx]
-            if not in_header:
-                if "/*" in line:
-                    in_header = True
-                    header_lines.append(line)
-                    if "*/" in line and line.find("*/") > line.find("/*"):
-                        break
-            else:
+            stripped = line.strip()
+            if in_block:
                 header_lines.append(line)
-                if "*/" in line:
+                if "*/" in stripped:
+                    in_block = False
+            else:
+                if not stripped:
+                    # Blank line outside block comment terminates header block
+                    break
+                if stripped.startswith("/*"):
+                    header_lines.append(line)
+                    if not ("*/" in stripped and stripped.find("*/") > stripped.find("/*")):
+                        in_block = True
+                elif stripped.startswith("//"):
+                    header_lines.append(line)
+                else:
+                    # Non-comment line terminates header
                     break
 
         header_text = "\n".join(header_lines)
-        violations.extend(self._check_header_content(header_text, file_path, header_start_line, context))
-
+        violations.extend(self._check_header_content(header_text, file_path, actual_line_num, context))
         return violations

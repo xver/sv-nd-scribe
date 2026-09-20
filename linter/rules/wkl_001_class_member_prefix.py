@@ -9,7 +9,8 @@ from linter.core.base_rule import BaseRule, RuleViolation, RuleSeverity
 class ClassMemberPrefixRule(BaseRule):
     """
     [WKL-001] Class Member Prefix Rule
-    Checks that class members have the 'm_' or 'is_' prefix, with standard exceptions.
+    Checks that class public member variables have the 'm_' or 'is_' prefix, with standard exceptions.
+    Variables internal to functions, tasks, or methods, as well as local/protected members, are excluded.
     Uses purely Verible AST syntax tree parsing.
     """
 
@@ -19,10 +20,22 @@ class ClassMemberPrefixRule(BaseRule):
 
     @property
     def description(self) -> str:
-        return "Class members should have 'm_' prefix (with exceptions)."
+        return "Class public member variables should have 'm_' prefix (with exceptions)."
 
     def default_severity(self) -> RuleSeverity:
         return RuleSeverity.ERROR
+
+    def _is_inside_method(self, node: Any) -> bool:
+        """Check if an AST node is located inside a function, task, or method body."""
+        curr = getattr(node, 'parent', None)
+        while curr:
+            tag = getattr(curr, 'tag', '')
+            if tag == 'kClassDeclaration':
+                break
+            if any(m in tag for m in ('Function', 'Task', 'Constructor', 'Method')):
+                return True
+            curr = getattr(curr, 'parent', None)
+        return False
 
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
@@ -42,9 +55,13 @@ class ClassMemberPrefixRule(BaseRule):
                     pass
 
             for dnode in data_nodes:
+                # Exclude variables internal to functions, tasks, or class constructors
+                if self._is_inside_method(dnode):
+                    continue
+
                 text = getattr(dnode, 'text', '') or ""
-                # Exclude non-variable member constructs (typedef, methods, covergroups, constraints, parameters, etc.)
-                if re.search(r"\b(typedef|function|task|const|covergroup|coverpoint|constraint|cross|localparam|parameter|checker|property|sequence|import|export)\b", text):
+                # Exclude non-variable member constructs (typedef, methods, covergroups, constraints, parameters, local/protected, etc.)
+                if re.search(r"\b(typedef|function|task|const|covergroup|coverpoint|constraint|cross|localparam|parameter|checker|property|sequence|import|export|local|protected)\b", text):
                     continue
 
                 vars_found = []
@@ -69,7 +86,7 @@ class ClassMemberPrefixRule(BaseRule):
                             )
                 else:
                     m = re.match(
-                        r"^\s*(?:(?:rand|randc|protected|local|static|const|virtual|automatic)\s+)*"
+                        r"^\s*(?:(?:rand|randc|static|const|virtual|automatic)\s+)*"
                         r"(?:(?:logic|bit|byte|shortint|int|longint|integer|time|shortreal|real|realtime|string|[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)*)\s*)"
                         r"(?:\s*\[[^\]]+\])*\s+([a-zA-Z_][a-zA-Z0-9_]*)",
                         text.strip()

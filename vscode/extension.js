@@ -73,6 +73,64 @@ class SvScribeCodeActionProvider {
                     overwriteAction.diagnostics = [diagnostic];
                     actions.push(overwriteAction);
 
+                    const diagMsg = (diagnostic.message || '').toLowerCase();
+                    const docText = document.getText();
+                    const headerText = docText.slice(0, 4000);
+
+                    if (diagMsg.includes('company') || headerText.includes('TODO_COMPANY')) {
+                        const openCompanyAction = new vscode.CodeAction(
+                            'SV Scribe: Configure Company in Settings (sv-nd-scribe.company)',
+                            vscode.CodeActionKind.QuickFix
+                        );
+                        openCompanyAction.command = {
+                            command: 'workbench.action.openSettings',
+                            title: 'Configure Company in Settings',
+                            arguments: ['sv-nd-scribe.company']
+                        };
+                        openCompanyAction.diagnostics = [diagnostic];
+                        actions.push(openCompanyAction);
+                    }
+
+                    if (diagMsg.includes('author') || diagMsg.includes('email') || headerText.includes('TODO_AUTHOR')) {
+                        const openAuthorAction = new vscode.CodeAction(
+                            'SV Scribe: Configure Author in Settings (sv-nd-scribe.author)',
+                            vscode.CodeActionKind.QuickFix
+                        );
+                        openAuthorAction.command = {
+                            command: 'workbench.action.openSettings',
+                            title: 'Configure Author in Settings',
+                            arguments: ['sv-nd-scribe.author']
+                        };
+                        openAuthorAction.diagnostics = [diagnostic];
+                        actions.push(openAuthorAction);
+                    }
+
+                    if (diagMsg.includes('legal') || headerText.includes('TODO_LEGAL')) {
+                        const openLegalAction = new vscode.CodeAction(
+                            'SV Scribe: Configure Legal Notice in Settings (sv-nd-scribe.legal)',
+                            vscode.CodeActionKind.QuickFix
+                        );
+                        openLegalAction.command = {
+                            command: 'workbench.action.openSettings',
+                            title: 'Configure Legal Notice in Settings',
+                            arguments: ['sv-nd-scribe.legal']
+                        };
+                        openLegalAction.diagnostics = [diagnostic];
+                        actions.push(openLegalAction);
+                    }
+
+                    const openSettingsAction = new vscode.CodeAction(
+                        'SV Scribe: Open .vscode/settings.json',
+                        vscode.CodeActionKind.QuickFix
+                    );
+                    openSettingsAction.command = {
+                        command: 'sv-nd-scribe.openSettingsJson',
+                        title: 'Open .vscode/settings.json',
+                        arguments: [document.uri]
+                    };
+                    openSettingsAction.diagnostics = [diagnostic];
+                    actions.push(openSettingsAction);
+
                     const openTmplAction = new vscode.CodeAction(
                         'SV Scribe: Open Header Template to Edit (header_template.txt)',
                         vscode.CodeActionKind.QuickFix
@@ -132,6 +190,46 @@ class SvScribeCodeActionProvider {
                 arguments: [document.uri]
             };
             actions.push(overwriteAction);
+
+            const docText = document.getText();
+            const headerText = docText.slice(0, 4000);
+
+            if (headerText.includes('TODO_COMPANY')) {
+                const openCompanyAction = new vscode.CodeAction(
+                    'SV Scribe: Configure Company in Settings (sv-nd-scribe.company)',
+                    vscode.CodeActionKind.QuickFix
+                );
+                openCompanyAction.command = {
+                    command: 'workbench.action.openSettings',
+                    title: 'Configure Company in Settings',
+                    arguments: ['sv-nd-scribe.company']
+                };
+                actions.push(openCompanyAction);
+            }
+            if (headerText.includes('TODO_AUTHOR')) {
+                const openAuthorAction = new vscode.CodeAction(
+                    'SV Scribe: Configure Author in Settings (sv-nd-scribe.author)',
+                    vscode.CodeActionKind.QuickFix
+                );
+                openAuthorAction.command = {
+                    command: 'workbench.action.openSettings',
+                    title: 'Configure Author in Settings',
+                    arguments: ['sv-nd-scribe.author']
+                };
+                actions.push(openAuthorAction);
+            }
+            if (headerText.includes('TODO_LEGAL')) {
+                const openLegalAction = new vscode.CodeAction(
+                    'SV Scribe: Configure Legal Notice in Settings (sv-nd-scribe.legal)',
+                    vscode.CodeActionKind.QuickFix
+                );
+                openLegalAction.command = {
+                    command: 'workbench.action.openSettings',
+                    title: 'Configure Legal Notice in Settings',
+                    arguments: ['sv-nd-scribe.legal']
+                };
+                actions.push(openLegalAction);
+            }
 
             const openTmplAction = new vscode.CodeAction(
                 'SV Scribe: Open Header Template to Edit (header_template.txt)',
@@ -342,6 +440,29 @@ function activate(context) {
             }
             if (!uri) return;
             await runFixer(uri, 'ND-001', ['--overwrite-header']);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('sv-nd-scribe.openSettingsJson', async (targetUri) => {
+            try {
+                let wsFolder = null;
+                if (targetUri) {
+                    wsFolder = vscode.workspace.getWorkspaceFolder(targetUri);
+                }
+                if (!wsFolder && vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+                    wsFolder = vscode.workspace.workspaceFolders[0];
+                }
+                if (!wsFolder) {
+                    return vscode.commands.executeCommand('workbench.action.openSettings', 'sv-nd-scribe');
+                }
+                const settingsUri = vscode.Uri.joinPath(wsFolder.uri, '.vscode', 'settings.json');
+                const doc = await vscode.workspace.openTextDocument(settingsUri);
+                await vscode.window.showTextDocument(doc);
+            } catch (err) {
+                // If .vscode/settings.json doesn't exist yet, open settings UI
+                vscode.commands.executeCommand('workbench.action.openSettings', 'sv-nd-scribe');
+            }
         })
     );
 
@@ -693,6 +814,21 @@ function getExecutionEnv(scribeHome) {
 
     if (projectConfig) {
         env.SV_ND_SCRIBE_PROJECT_CONFIG = resolveVscodeVariables(projectConfig);
+    }
+
+    const author = config.get('author');
+    if (author && typeof author === 'string' && author.trim()) {
+        env.SV_ND_SCRIBE_AUTHOR = resolveVscodeVariables(author.trim());
+    }
+
+    const company = config.get('company');
+    if (company && typeof company === 'string' && company.trim()) {
+        env.SV_ND_SCRIBE_COMPANY = resolveVscodeVariables(company.trim());
+    }
+
+    const legal = config.get('legal');
+    if (legal && typeof legal === 'string' && legal.trim()) {
+        env.SV_ND_SCRIBE_LEGAL = resolveVscodeVariables(legal.trim());
     }
 
     return env;

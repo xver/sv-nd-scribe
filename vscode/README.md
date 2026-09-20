@@ -173,6 +173,9 @@ Configure the extension via VS Code Settings (`Ctrl+,`) by searching for `sv-nd-
 | `sv-nd-scribe.enableQuickFix` | `true` | Enable or disable Code Action Quick Fix (`Ctrl+.` / lightbulb) suggestions. |
 | `sv-nd-scribe.env` | `{}` | Key-value dictionary of environment variables passed to linter and agent processes (e.g. `SVND_SCRIBE_HOME`, `SV_ND_SCRIBE_PROJECT_CONFIG`). |
 | `sv-nd-scribe.runOn` | `onSave` | When to trigger linting: `onSave` or `onOpen`. |
+| `sv-nd-scribe.author` | `""` | Default author name and/or email for file headers (e.g. `'Your Name <your_email@example.com>'`). If empty, auto-detected from Git `user.name`/`user.email` or `agent_config.json`. Any author without a valid `@` email falls back to `TODO_AUTHOR`. |
+| `sv-nd-scribe.company` | `""` | Default company name for file headers. If empty, falls back to `TODO_COMPANY`. |
+| `sv-nd-scribe.legal` | `""` | Default legal or license notice for file headers (e.g. `'Licensed under the MIT License.'`). If empty, falls back to `TODO_LEGAL`. |
 
 ---
 
@@ -187,6 +190,7 @@ Access these commands via the VS Code Command Palette (`Ctrl+Shift+P`):
 | `sv-nd-scribe.overwriteHeaderFromTemplate` | **`SV_Scribe: Overwrite File Header from Template`** | Force overwrite the active file's header using the active template. |
 | `sv-nd-scribe.openHeaderTemplate` | **`SV_Scribe: Open Header Template to Edit`** | Open `header_template.txt` in the editor. |
 | `sv-nd-scribe.resetHeaderTemplate` | **`SV_Scribe: Reset Header Template to Default`** | Reset `header_template.txt` to the default factory template. |
+| `sv-nd-scribe.openSettingsJson` | **`SV_Scribe: Open Settings (.vscode/settings.json)`** | Open workspace `.vscode/settings.json` or settings editor. |
 | `sv-nd-scribe.lint` | **`SV_Scribe: Lint`** | Manually run linter on the active document. |
 | `sv-nd-scribe.clear` | **`SV_Scribe: Clear`** | Clear all diagnostic underlines from the active document. |
 | `sv-nd-scribe.lintAll` | **`SV_Scribe: Lint_All`** | Run linter across all currently open SystemVerilog documents. |

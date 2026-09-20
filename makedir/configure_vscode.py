@@ -147,6 +147,14 @@ def main():
         action="store_true",
         help="Display current SV ND Scribe configuration and environment status"
     )
+    parser.add_argument(
+        "--author",
+        help="Author string for file headers in settings.json (e.g. 'Your Name <you@example.com>')"
+    )
+    parser.add_argument(
+        "--company",
+        help="Company name for file headers in settings.json"
+    )
 
     args = parser.parse_args()
     workspace_dir = os.path.abspath(args.workspace)
@@ -203,6 +211,28 @@ def main():
     updated_settings["sv-nd-scribe.runOn"] = args.run_on
     updated_settings["sv-nd-scribe.enableQuickFix"] = enable_quick_fix
 
+    # Resolve author: CLI arg > existing setting > git config
+    resolved_author = args.author or existing_settings.get("sv-nd-scribe.author")
+    if not resolved_author:
+        try:
+            gn = subprocess.run(["git", "config", "user.name"], stdout=subprocess.PIPE, text=True, check=False).stdout.strip()
+            ge = subprocess.run(["git", "config", "user.email"], stdout=subprocess.PIPE, text=True, check=False).stdout.strip()
+            if gn and ge:
+                resolved_author = f"{gn} <{ge}>"
+            elif ge:
+                resolved_author = ge
+            elif gn:
+                resolved_author = gn
+        except Exception:
+            pass
+
+    if resolved_author:
+        updated_settings["sv-nd-scribe.author"] = resolved_author
+
+    resolved_company = args.company or existing_settings.get("sv-nd-scribe.company")
+    if resolved_company:
+        updated_settings["sv-nd-scribe.company"] = resolved_company
+
     # 1. Environment variables for sv-nd-scribe extension processes
     updated_settings["sv-nd-scribe.env"] = {
         "SVND_SCRIBE_HOME": scribe_home,
@@ -249,6 +279,10 @@ def main():
         "PYTHONPATH": workspace_dir,
         "SV_ND_SCRIBE_PROJECT_CONFIG": os.path.join(workspace_dir, "linter", "configs")
     }
+    if resolved_author:
+        raw_env_vars["SV_ND_SCRIBE_AUTHOR"] = resolved_author
+    if resolved_company:
+        raw_env_vars["SV_ND_SCRIBE_COMPANY"] = resolved_company
     write_env_file(env_file_path, raw_env_vars)
 
     # 6. Write makedir/env.sh for shell sourcing

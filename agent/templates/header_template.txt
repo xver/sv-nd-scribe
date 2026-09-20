@@ -1,11 +1,16 @@
 /******************************************************************************
  * File:        ${filename}
  *
- * Company:     MY
+ * Company:     ${company}
  *
- * Author:      ME
+ * Author:      ${author}
  *
+ * Description: ${description}
+ *
+ * Created:     ${created}
  *
  * Updated:     ${updated}
  *
+ * Copyright (c) ${year} ${company}
+ * ${legal}
  ******************************************************************************/

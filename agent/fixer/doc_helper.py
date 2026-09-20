@@ -7,6 +7,10 @@ Ensures all NaturalDocs comment insertions comply with ND-012 (non-empty descrip
 """
 
 import re
+import os
+import sys
+import json
+import subprocess
 from typing import List, Dict, Any, Optional, Tuple
 from agent.llm.skill_loader import load_skill
 
@@ -293,3 +297,214 @@ Output ONLY the NaturalDocs comment lines starting with `//`. Do not include mar
     if extra_lines:
         doc_comment += "".join(extra_lines)
     return doc_comment, False
+
+
+def _has_valid_email(val: str) -> bool:
+    if not val:
+        return False
+    return bool(re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", val))
+
+
+def get_git_config_author(dir_path: Optional[str] = None) -> Optional[str]:
+    """
+    Attempt to read author name and email from Git configuration in dir_path or current directory.
+    Checks repository local config first, then global config.
+    Returns: 'Name <email>' if email is present, or None if no valid email.
+    """
+    cwd = dir_path if (dir_path and os.path.exists(dir_path)) else os.getcwd()
+    if os.path.isfile(cwd):
+        cwd = os.path.dirname(cwd)
+
+    name = ""
+    email = ""
+    try:
+        res = subprocess.run(
+            ["git", "config", "user.name"],
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+        if res.returncode == 0:
+            name = res.stdout.strip()
+    except Exception:
+        pass
+
+    try:
+        res = subprocess.run(
+            ["git", "config", "user.email"],
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+        if res.returncode == 0:
+            email = res.stdout.strip()
+    except Exception:
+        pass
+
+    if name and email and _has_valid_email(email):
+        return f"{name} <{email}>"
+    if email and _has_valid_email(email):
+        return email
+    return None
+
+
+def get_vscode_setting(setting_key: str, start_dir: Optional[str] = None) -> Optional[str]:
+    """
+    Look for .vscode/settings.json in start_dir and up to 10 parent directories.
+    Returns the string value for setting_key if configured.
+    """
+    curr = start_dir if (start_dir and os.path.exists(start_dir)) else os.getcwd()
+    if os.path.isfile(curr):
+        curr = os.path.dirname(curr)
+
+    for _ in range(10):
+        settings_path = os.path.join(curr, ".vscode", "settings.json")
+        if os.path.isfile(settings_path):
+            try:
+                with open(settings_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                val = data.get(setting_key)
+                if val and isinstance(val, str) and val.strip() and "TODO" not in val:
+                    return val.strip()
+            except Exception:
+                pass
+        parent = os.path.dirname(curr)
+        if parent == curr:
+            break
+        curr = parent
+    return None
+
+
+def resolve_company(
+    file_path: Optional[str] = None,
+    config: Optional[Dict[str, Any]] = None,
+) -> Tuple[str, str]:
+    """
+    Resolve the company name from explicit config, VS Code settings, or environment.
+    Falls back to 'TODO_COMPANY' if not configured.
+    """
+    agent_cfg = (config or {}).get("agent", config or {})
+    header_defaults = agent_cfg.get("header_defaults", {}) if isinstance(agent_cfg, dict) else {}
+    explicit_company = (
+        (header_defaults.get("company") if isinstance(header_defaults, dict) else None)
+        or agent_cfg.get("header_company")
+        or (config.get("company") if isinstance(config, dict) else None)
+    )
+    if (
+        explicit_company
+        and isinstance(explicit_company, str)
+        and explicit_company.strip()
+        and "TODO" not in explicit_company
+        and not explicit_company.startswith("${")
+    ):
+        return explicit_company.strip(), "explicit_config"
+
+    env_company = os.environ.get("SV_ND_SCRIBE_COMPANY", "").strip()
+    if env_company and "TODO" not in env_company:
+        return env_company, "env_var"
+
+    file_dir = os.path.dirname(os.path.abspath(file_path)) if file_path else os.getcwd()
+    vscode_company = get_vscode_setting("sv-nd-scribe.company", file_dir)
+    if vscode_company:
+        return vscode_company, "vscode_settings"
+
+    return "TODO_COMPANY", "fallback"
+
+
+def resolve_legal(
+    file_path: Optional[str] = None,
+    config: Optional[Dict[str, Any]] = None,
+) -> Tuple[str, str]:
+    """
+    Resolve legal/license notice from explicit config, VS Code settings, or environment.
+    Falls back to 'TODO_LEGAL' if not configured.
+    """
+    agent_cfg = (config or {}).get("agent", config or {})
+    header_defaults = agent_cfg.get("header_defaults", {}) if isinstance(agent_cfg, dict) else {}
+    explicit_legal = (
+        (header_defaults.get("legal") if isinstance(header_defaults, dict) else None)
+        or agent_cfg.get("header_legal")
+        or (config.get("legal") if isinstance(config, dict) else None)
+    )
+    if (
+        explicit_legal
+        and isinstance(explicit_legal, str)
+        and explicit_legal.strip()
+        and "TODO" not in explicit_legal
+        and not explicit_legal.startswith("${")
+    ):
+        return explicit_legal.strip(), "explicit_config"
+
+    env_legal = os.environ.get("SV_ND_SCRIBE_LEGAL", "").strip()
+    if env_legal and "TODO" not in env_legal:
+        return env_legal, "env_var"
+
+    file_dir = os.path.dirname(os.path.abspath(file_path)) if file_path else os.getcwd()
+    vscode_legal = get_vscode_setting("sv-nd-scribe.legal", file_dir)
+    if vscode_legal:
+        return vscode_legal, "vscode_settings"
+
+    return "TODO_LEGAL", "fallback"
+
+
+def resolve_author(
+    file_path: Optional[str] = None,
+    config: Optional[Dict[str, Any]] = None,
+) -> Tuple[str, str]:
+    """
+    Resolve author string following precedence:
+      1. Explicit config override (if contains valid email)
+      2. Environment variable: SV_ND_SCRIBE_AUTHOR (if contains valid email)
+      3. VS Code settings: sv-nd-scribe.author in .vscode/settings.json (if contains valid email)
+      4. Git config: user.name and user.email (if email is valid)
+      5. Fallback: 'TODO_AUTHOR'
+
+    Note: Any author value lacking a valid email address is rejected and defaults to 'TODO_AUTHOR'.
+    """
+    file_dir = os.path.dirname(os.path.abspath(file_path)) if file_path else os.getcwd()
+
+    agent_cfg = (config or {}).get("agent", config or {})
+    header_defaults = agent_cfg.get("header_defaults", {}) if isinstance(agent_cfg, dict) else {}
+    explicit_author = (
+        (header_defaults.get("author") if isinstance(header_defaults, dict) else None)
+        or agent_cfg.get("header_author")
+        or (config.get("author") if isinstance(config, dict) else None)
+    )
+    if (
+        explicit_author
+        and isinstance(explicit_author, str)
+        and explicit_author.strip()
+        and "TODO" not in explicit_author
+        and not explicit_author.startswith("${")
+    ):
+        if _has_valid_email(explicit_author.strip()):
+            return explicit_author.strip(), "explicit_config"
+        git_auth = get_git_config_author(file_dir)
+        if git_auth and "<" in git_auth:
+            git_email = git_auth.split("<")[-1].rstrip(">").strip()
+            return f"{explicit_author.strip()} <{git_email}>", "explicit_config"
+
+    env_author = os.environ.get("SV_ND_SCRIBE_AUTHOR", "").strip()
+    if env_author and "TODO" not in env_author:
+        if _has_valid_email(env_author):
+            return env_author, "env_var"
+
+    vscode_author = get_vscode_setting("sv-nd-scribe.author", file_dir)
+    if vscode_author:
+        if _has_valid_email(vscode_author):
+            return vscode_author, "vscode_settings"
+        # If vscode_author is just a name, try pairing with git email
+        git_auth = get_git_config_author(file_dir)
+        if git_auth and "<" in git_auth:
+            git_email = git_auth.split("<")[-1].rstrip(">").strip()
+            return f"{vscode_author} <{git_email}>", "vscode_settings"
+
+    git_author = get_git_config_author(file_dir)
+    if git_author:
+        return git_author, "git_config"
+
+    return "TODO_AUTHOR", "fallback"

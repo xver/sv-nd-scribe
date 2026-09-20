@@ -20,7 +20,7 @@ rule in this document.
 ## 1  General Principles
 
 1. **Every documentable SystemVerilog statement MUST have a NaturalDocs comment block immediately above it** (no blank lines between the comment and the statement).
-2. Both `//` line comments and `/* */` block comments are fully supported by NaturalDocs. The only hard requirement is that **no part of a NaturalDocs comment may be on the same line as code**. The project convention is to use `//` line comments for all documentation comments and reserve `/* */` for the file header — but this is a convention, not a NaturalDocs restriction.
+2. Both `//` line comments and `/* */` block comments are fully supported by NaturalDocs. The only hard requirement is that **no part of a NaturalDocs comment may be on the same line as code**. The project convention is to use `//` line comments for construct documentation comments. For file headers (`[ND-001]`), block comments (`/* */`), single-line comments (`//`), and mixed comments are all fully supported, with `/* */` used as the default template format.
 3. **Spacing rule — applies to every NaturalDocs comment line without exception:**
     - Every NaturalDocs comment line must begin with `//` followed by either a space or a keyword token such as `Group:` or `define:`.
     - Every keyword line ends with `:` which MUST be followed by **at least one space** before the identifier or description text.
@@ -44,7 +44,7 @@ rule in this document.
 
 ## 2  File Header
 
-Every `.sv` file MUST begin with a block comment header using `/* */` syntax:
+Every `.sv` file MUST begin with a file header comment block containing a `File:` keyword. The header supports block comments (`/* */`), single-line comments (`//`), or mixed comments (defaulting to `/* */` in the corporate template):
 
 ```systemverilog
 /*******************************************************************************
@@ -733,7 +733,7 @@ typedef struct packed {
 
 | Element | Comment Keyword | Example Identifier |
 | :-- | :-- | :-- |
-| File header | `/* */` block | N/A |
+| File header | `/* */`, `//`, or mixed | N/A |
 | Section heading | `// Group:` | `Methods` |
 | Preprocessor define | `// define:` | `ND_MAX_BURST_LEN` |
 | Package | `// Package:` | `nd_example_pkg` |

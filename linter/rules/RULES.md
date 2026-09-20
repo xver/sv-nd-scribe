@@ -33,7 +33,7 @@ Documentation rules that enforce [NaturalDocs](https://www.naturaldocs.org/) com
 
 | Rule ID  | Severity | Description |
 |----------|----------|-------------|
-| ND-001   | ERROR    | Every file must begin with a NaturalDocs file header block containing a `File:` keyword. |
+| ND-001   | ERROR    | Every file must begin with a NaturalDocs file header block (`/* */`, `//`, or mixed) containing a `File:` keyword. |
 | ND-002   | ERROR    | Non-module `.sv` files must have an `` `ifndef`` / `` `define`` include guard. |
 | ND-003   | ERROR    | NaturalDocs keywords must be followed by a space and colon (e.g. `// Function: name`). |
 | ND-004   | ERROR    | Any documented construct must be immediately preceded by a NaturalDocs comment block. |

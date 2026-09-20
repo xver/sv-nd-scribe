@@ -147,7 +147,20 @@ python3 -m agent --reset-header-template
 }
 ```
 
+
+### Author Resolution Precedence
+
+The `Author` field is automatically resolved using a priority cascade:
+1. **Explicit parameter / CLI config**: `agent.header_defaults.author` in config passed to the agent.
+2. **Environment variable**: `SV_ND_SCRIBE_AUTHOR`.
+3. **VS Code configuration**: `sv-nd-scribe.author` in `.vscode/settings.json`.
+4. **Project config file**: `agent_config.json` (`agent.header_defaults.author`).
+5. **Custom template static author**: Non-placeholder `Author:` line in `header_template.txt`.
+6. **Git configuration**: Auto-detected from `git config user.name` and `git config user.email` (format: `Name <email>`).
+7. **Fallback**: `"TODO_AUTHOR"` (triggers an actionable warning on how to configure).
+
 ---
+
 
 ## Model Context Protocol (MCP) Server
 

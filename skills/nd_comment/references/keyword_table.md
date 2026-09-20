@@ -2,7 +2,7 @@
 
 | Construct | Comment Keyword | Example |
 |---|---|---|
-| File header | `/* */` block | — |
+| File header | `/* */`, `//`, or mixed | `File: <name>` |
 | Section heading | `// Group:` | `// Group: Methods` |
 | Preprocessor define | `// define:` | `// define: ND_MAX_BURST_LEN` |
 | Package | `// Package:` | `// Package: nd_example_pkg` |

@@ -37,7 +37,7 @@ The `nd_comment` skill contains the definitive mapping of SystemVerilog construc
 
 | Construct | NaturalDocs Keyword | Comment Syntax |
 |---|---|---|
-| File Header | `File:` / `Title:` | `/* File: <name> ... */` |
+| File Header | `File:` / `Title:` | `/* File: <name> ... */`, `//`, or mixed |
 | Module | `Module:` | `// Module: <name>` |
 | Class | `Class:` | `// Class: <name>` |
 | Interface | `Interface:` | `// Interface: <name>` |

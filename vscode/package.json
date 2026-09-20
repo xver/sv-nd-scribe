@@ -2,7 +2,7 @@
   "name": "sv-nd-scribe-vscode",
   "displayName": "SV ND Scribe",
   "description": "SV ND Scribe: Real-time NaturalDocs documentation and formatting feedback for SystemVerilog",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "icon": "scribe_logo.png",
   "publisher": "ic-verimeter",
   "engines": {
@@ -57,6 +57,10 @@
       {
         "command": "sv-nd-scribe.resetHeaderTemplate",
         "title": "SV_Scribe: Reset Header Template to Default"
+      },
+      {
+        "command": "sv-nd-scribe.openSettingsJson",
+        "title": "SV_Scribe: Open Settings (.vscode/settings.json)"
       }
     ],
     "configuration": {
@@ -95,6 +99,21 @@
           ],
           "default": "onSave",
           "description": "When to run the linter (onSave or onOpen)."
+        },
+        "sv-nd-scribe.author": {
+          "type": "string",
+          "default": "",
+          "description": "Default author name and/or email for file headers (e.g., 'Your Name <your_email@example.com>'). If empty, automatically falls back to Git user.name/email or agent_config.json."
+        },
+        "sv-nd-scribe.company": {
+          "type": "string",
+          "default": "",
+          "description": "Default company name for file headers. If empty, falls back to agent_config.json."
+        },
+        "sv-nd-scribe.legal": {
+          "type": "string",
+          "default": "",
+          "description": "Default legal or license notice for file headers (e.g. 'Licensed under the MIT License.'). If empty, defaults to TODO_LEGAL."
         }
       }
     }

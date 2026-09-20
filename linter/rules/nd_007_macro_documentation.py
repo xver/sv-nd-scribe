@@ -25,9 +25,11 @@ class MacroDocumentationRule(BaseRule):
 
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
+        clean_content = self._mask_comments_and_strings(file_content)
+        clean_lines = clean_content.splitlines()
         lines = file_content.splitlines()
         
-        for i, line in enumerate(lines):
+        for i, line in enumerate(clean_lines):
             stripped = line.strip()
             if stripped.startswith("`define"):
                 parts = stripped.split()
@@ -36,6 +38,11 @@ class MacroDocumentationRule(BaseRule):
                 macro_name = parts[1].split("(")[0].strip()
                 
                 # Exclude include guard defines (e.g. preceded by `ifndef or matching filename guard)
+                prev_line_idx = i - 1
+                while prev_line_idx >= 0 and not clean_lines[prev_line_idx].strip():
+                    prev_line_idx -= 1
+                if prev_line_idx >= 0 and clean_lines[prev_line_idx].strip().startswith("`ifndef"):
+                    continue
                 if i > 0 and lines[i-1].strip().startswith("`ifndef"):
                     continue
                 file_guard = file_path.replace("\\", "/").split("/")[-1].replace(".", "_").upper()

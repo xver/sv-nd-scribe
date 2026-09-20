@@ -57,6 +57,46 @@
     end \
   end
 
+//Group: Commented-Out Defines
+
+// The following defines are commented out and are ignored
+// by the linter. They do not produce ND-007 or WKL-003 violations.
+
+// --- Single-line comment containing a define ---
+// `define Foo 1
+
+// --- Block comment containing a single define ---
+/*
+`define Bar 2
+*/
+
+// --- Block comment containing multiple defines ---
+/*
+ * `define Baz 3
+ * `define Qux(x) (x + 1)
+ */
+
+// --- Block comment with defines that lack UPPER_SNAKE_CASE (WKL-003) ---
+/*
+`define myLowerMacro 42
+`define another_bad_Macro 99
+*/
+
+// --- Multi-line block comment with a define in the middle ---
+/* This is a legacy macro that was disabled during refactoring.
+   `define DISABLED_LEGACY_FEATURE 1
+   Re-enable in a future release.
+*/
+
+// --- Single-line block comment with a define ---
+/* `define INLINE_COMMENTED 1 */
+
+// --- Nested-looking block comment ---
+/*
+   The following was removed:
+   `define OLD_TIMEOUT_VAL 5000
+*/
+
 //Package: nd_example_pkg
 //Example package demonstrating correct NaturalDocs documentation.
 //This package contains properly documented classes, functions, tasks,
@@ -97,8 +137,8 @@ package nd_example_pkg;
   //Union: data_overlay_t
   //Packed union allowing raw or byte-level access to a 16-bit value
   typedef union packed {
-    logic [15:0] raw;
-    logic [1:0][7:0] bytes;
+    logic [15:0] raw;///TODO description for raw
+    logic [1:0][7:0] bytes;///TODO description for bytes
   } data_overlay_t;
 
   //Group: Configuration Classes
@@ -422,7 +462,7 @@ package nd_example_pkg;
       end
     endfunction : build_phase
 
-    //Function: run_phase
+    //Task: run_phase
     //UVM run phase - main driver execution
     //
     //Parameters:
@@ -439,7 +479,7 @@ package nd_example_pkg;
       end
     endtask : run_phase
 
-    //Function: drive_transaction
+    //Task: drive_transaction
     //Drive a single transaction on the interface
     //
     //Parameters:
@@ -458,7 +498,7 @@ package nd_example_pkg;
       m_current_state = IDLE_t;
     endtask : drive_transaction
 
-    //Function: reset_driver
+    //Task: reset_driver
     //Reset the driver state machine and cycle counter to initial values
     extern task reset_driver();
 
@@ -542,7 +582,7 @@ package nd_example_pkg;
       end
     endtask : run_phase
 
-    //Function: collect_transaction
+    //Task: collect_transaction
     //Collect a transaction from the interface
     //
     //Parameters:
@@ -599,7 +639,11 @@ interface nd_bus_if (input logic clk, input logic rst_n);
   //Subordinate ready handshake signal
   logic        ready;
 
+  // Modport: manager
+  // TODO: Add description for modport 'manager'
   modport manager     (output addr, data, wr_en, valid, input ready);
+  // Modport: subordinate
+  // TODO: Add description for modport 'subordinate'
   modport subordinate (input  addr, data, wr_en, valid, output ready);
 
 endinterface : nd_bus_if
@@ -696,7 +740,7 @@ bind nd_dut nd_protocol_checker chk_inst (
 //program: nd_test_program
 //Test program block for driving stimulus.
 program nd_test_program(input logic clk, output logic rst_n, output logic valid);
-  
+
   //process: stimulus_p
   //Initial block process for test stimulus
   initial begin : stimulus_p

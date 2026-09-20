@@ -4,6 +4,8 @@ import re
 from datetime import date
 from typing import List, Dict, Any, Optional
 from agent.fixer.base_fixer import BaseFixer, FixProposal
+from agent.fixer.doc_helper import resolve_author, resolve_company, resolve_legal
+import sys
 
 
 class FixNd001(BaseFixer):
@@ -135,9 +137,19 @@ class FixNd001(BaseFixer):
         agent_cfg = (config or {}).get("agent", config or {})
         cfg = agent_cfg.get("header_defaults", {})
         filename = os.path.basename(violation["file"])
-        company = cfg.get("company", agent_cfg.get("header_company", "TODO_COMPANY"))
-        author = cfg.get("author", agent_cfg.get("header_author", "TODO_AUTHOR"))
-        legal = cfg.get("legal", agent_cfg.get("header_legal", "TODO_LEGAL"))
+        company, company_source = resolve_company(file_path=violation.get("file"), config=config)
+        author, author_source = resolve_author(file_path=violation.get("file"), config=config)
+        legal, legal_source = resolve_legal(file_path=violation.get("file"), config=config)
+
+        if author == "TODO_AUTHOR":
+            print(
+                "[agent] Notice: Author is not configured; using 'TODO_AUTHOR'.\n"
+                "Configure 'sv-nd-scribe.author' in VS Code settings, 'agent.header_defaults.author' in agent_config.json,\n"
+                "or set your Git identity:\n"
+                "  git config --global user.name \"Your Name\"\n"
+                "  git config --global user.email \"your_email@example.com\"",
+                file=sys.stderr,
+            )
 
         msg = violation.get("message", "")
         viol_line = violation.get("line", 1)
@@ -149,21 +161,45 @@ class FixNd001(BaseFixer):
         except ValueError:
             date_str = today.strftime("%B %#d, %Y")
 
-        # Find existing header block in source_lines
+        is_missing_header = "Missing block comment file header" in msg
+
+        # Find existing header block at the beginning of source_lines
         start_idx = -1
         end_idx = -1
-        for idx, l_str in enumerate(source_lines[:100]):
-            stripped = l_str.strip()
-            if start_idx == -1:
-                if stripped.startswith("/*"):
-                    start_idx = idx
-                    if "*/" in stripped[2:]:
+        if not is_missing_header:
+            in_block = False
+            for idx, l_str in enumerate(source_lines[:100]):
+                stripped = l_str.strip()
+                if start_idx == -1:
+                    if not stripped:
+                        continue
+                    if stripped.startswith("/*"):
+                        start_idx = idx
                         end_idx = idx
+                        if not ("*/" in stripped and stripped.find("*/") > stripped.find("/*")):
+                            in_block = True
+                    elif stripped.startswith("//"):
+                        start_idx = idx
+                        end_idx = idx
+                    else:
+                        # Non-empty line before /* or // means there is no header at top of file
                         break
-            else:
-                if "*/" in stripped:
-                    end_idx = idx
-                    break
+                else:
+                    if in_block:
+                        end_idx = idx
+                        if "*/" in stripped:
+                            in_block = False
+                    else:
+                        if not stripped:
+                            break
+                        if stripped.startswith("/*"):
+                            end_idx = idx
+                            if not ("*/" in stripped and stripped.find("*/") > stripped.find("/*")):
+                                in_block = True
+                        elif stripped.startswith("//"):
+                            end_idx = idx
+                        else:
+                            break
 
         has_existing_header = (start_idx != -1)
 
@@ -183,30 +219,40 @@ class FixNd001(BaseFixer):
                     is_safe=True,
                 )
             else:
+                first_non_empty = 0
+                while first_non_empty < len(source_lines) and not source_lines[first_non_empty].strip():
+                    first_non_empty += 1
+                if not header_block[-1].endswith("\n\n") and (not source_lines or source_lines[first_non_empty:first_non_empty+1]):
+                    header_block.append("\n")
                 return FixProposal(
                     rule_id="ND-001",
                     file=violation["file"],
                     line=1,
                     description="Insert file header comment block from template",
                     patch_lines=header_block,
+                    replace_range=(1, first_non_empty) if first_non_empty > 0 else None,
                     replace_line=None,
                     is_safe=True,
                 )
 
-        # MODE 2: Completely missing header comment (no /* */ found)
-        if not has_existing_header:
-            if "Missing block comment file header" in msg or viol_line == 1:
-                header_block = self._render_full_template(filename, company, author, legal, date_str, today, agent_cfg, violation, source_lines)
-                return FixProposal(
-                    rule_id="ND-001",
-                    file=violation["file"],
-                    line=1,
-                    description="Insert file header comment block",
-                    patch_lines=header_block,
-                    replace_line=None,
-                    is_safe=True,
-                )
-            return None
+        # MODE 2: Completely missing header comment (no /* */ found at top of file)
+        if not has_existing_header or is_missing_header:
+            header_block = self._render_full_template(filename, company, author, legal, date_str, today, agent_cfg, violation, source_lines)
+            first_non_empty = 0
+            while first_non_empty < len(source_lines) and not source_lines[first_non_empty].strip():
+                first_non_empty += 1
+            if not header_block[-1].endswith("\n\n") and (not source_lines or source_lines[first_non_empty:first_non_empty+1]):
+                header_block.append("\n")
+            return FixProposal(
+                rule_id="ND-001",
+                file=violation["file"],
+                line=1,
+                description="Insert file header comment block from template",
+                patch_lines=header_block,
+                replace_range=(1, first_non_empty) if first_non_empty > 0 else None,
+                replace_line=None,
+                is_safe=True,
+            )
 
         # MODE 3: Specific field error/warning in an existing header -> ONLY fix the targeted field/line!
         if 0 <= viol_line - 1 < len(source_lines):
@@ -249,18 +295,15 @@ class FixNd001(BaseFixer):
         # Case 3b: Placeholder in a specific line (e.g. TODO_COMPANY, TODO_AUTHOR, TODO_LEGAL)
         if "contains unresolved placeholder" in msg or "TODO" in target_line_text:
             new_line = target_line_text
-            if "TODO_COMPANY" in target_line_text:
-                new_line = new_line.replace("TODO_COMPANY", company)
-            if "TODO_AUTHOR" in target_line_text:
-                new_line = new_line.replace("TODO_AUTHOR", author)
-            if "TODO_LEGAL" in target_line_text:
-                new_line = new_line.replace("TODO_LEGAL", legal)
-            if "TODO COMPANY" in target_line_text:
-                new_line = new_line.replace("TODO COMPANY", company)
-            if "TODO AUTHOR" in target_line_text:
-                new_line = new_line.replace("TODO AUTHOR", author)
-            if "TODO LEGAL" in target_line_text:
-                new_line = new_line.replace("TODO LEGAL", legal)
+            if "TODO_COMPANY" in target_line_text or "TODO COMPANY" in target_line_text:
+                if company != "TODO_COMPANY":
+                    new_line = new_line.replace("TODO_COMPANY", company).replace("TODO COMPANY", company)
+            if "TODO_AUTHOR" in target_line_text or "TODO AUTHOR" in target_line_text:
+                if author != "TODO_AUTHOR":
+                    new_line = new_line.replace("TODO_AUTHOR", author).replace("TODO AUTHOR", author)
+            if "TODO_LEGAL" in target_line_text or "TODO LEGAL" in target_line_text:
+                if legal != "TODO_LEGAL":
+                    new_line = new_line.replace("TODO_LEGAL", legal).replace("TODO LEGAL", legal)
 
             if new_line != target_line_text:
                 return FixProposal(
@@ -275,18 +318,19 @@ class FixNd001(BaseFixer):
 
         # Case 3c: Author format warning (should contain email)
         if "valid email address" in msg and "Author:" in target_line_text:
-            if "TODO" not in author and author:
+            if "TODO" not in author and author and author != "TODO_AUTHOR":
                 new_line = re.sub(r"(^\s*(?:\*|//|/\*|)\s*Author:\s*).*$", rf"\g<1>{author}", target_line_text)
                 if not new_line.endswith("\n"):
                     new_line += "\n"
-                return FixProposal(
-                    rule_id="ND-001",
-                    file=violation["file"],
-                    line=viol_line,
-                    description=f"Update Author email in file header",
-                    patch_lines=[new_line],
-                    replace_range=(viol_line, viol_line),
-                    is_safe=True,
-                )
+                if new_line != target_line_text:
+                    return FixProposal(
+                        rule_id="ND-001",
+                        file=violation["file"],
+                        line=viol_line,
+                        description=f"Update Author email in file header",
+                        patch_lines=[new_line],
+                        replace_range=(viol_line, viol_line),
+                        is_safe=True,
+                    )
 
         return None

@@ -490,6 +490,87 @@ class BaseRule(ABC):
             stripped.startswith('*')
         )
 
+    def _mask_comments_and_strings(self, content: str) -> str:
+        """
+        Replace comments (both // and /* ... */) and string literals with spaces,
+        preserving newlines and character positions so line numbers and offsets match.
+        """
+        chars = list(content)
+        n = len(chars)
+        i = 0
+        in_block_comment = False
+        in_line_comment = False
+        in_string = False
+
+        while i < n:
+            c = chars[i]
+            next_c = chars[i + 1] if i + 1 < n else ""
+
+            if in_line_comment:
+                if c == '\n':
+                    in_line_comment = False
+                elif c != '\r':
+                    chars[i] = ' '
+                i += 1
+                continue
+
+            if in_block_comment:
+                if c == '*' and next_c == '/':
+                    chars[i] = ' '
+                    chars[i + 1] = ' '
+                    in_block_comment = False
+                    i += 2
+                else:
+                    if c not in ('\r', '\n'):
+                        chars[i] = ' '
+                    i += 1
+                continue
+
+            if in_string:
+                if c == '\\':
+                    chars[i] = ' '
+                    if i + 1 < n and chars[i + 1] not in ('\r', '\n'):
+                        chars[i + 1] = ' '
+                        i += 2
+                    else:
+                        i += 1
+                elif c == '"':
+                    chars[i] = ' '
+                    in_string = False
+                    i += 1
+                elif c in ('\r', '\n'):
+                    in_string = False
+                    i += 1
+                else:
+                    chars[i] = ' '
+                    i += 1
+                continue
+
+            # Normal code
+            if c == '/' and next_c == '/':
+                in_line_comment = True
+                chars[i] = ' '
+                chars[i + 1] = ' '
+                i += 2
+                continue
+
+            if c == '/' and next_c == '*':
+                in_block_comment = True
+                chars[i] = ' '
+                chars[i + 1] = ' '
+                i += 2
+                continue
+
+            if c == '"':
+                in_string = True
+                chars[i] = ' '
+                i += 1
+                continue
+
+            i += 1
+
+        return "".join(chars)
+
 
 
     def _get_preceding_comment_block(self, file_content: str, start_line: int,

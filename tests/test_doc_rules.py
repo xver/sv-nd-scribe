@@ -8,6 +8,8 @@ import unittest
 _project_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _project_dir)
 
+from linter.naturaldoc_linter import NaturalDocLinter
+from linter.rules.wkl_001_class_member_prefix import ClassMemberPrefixRule
 from linter.rules import (
     FileHeaderRule,
     IncludeGuardRule,
@@ -42,6 +44,7 @@ from linter.rules import (
     ModportDocumentationRule,
     TypeDocumentationRule,
     OneVariablePerDeclarationRule,
+    MacroFormatRule,
 )
 
 
@@ -50,6 +53,68 @@ class DocRulesTests(unittest.TestCase):
         rule = FileHeaderRule()
         violations = rule.check("sample.sv", "module sample();\nendmodule\n", None)
 
+        self.assertEqual(len(violations), 1)
+        self.assertEqual(violations[0].rule_id, "[ND-001]")
+
+    def test_file_header_rule_allows_single_line_comments(self):
+        rule = FileHeaderRule()
+        content = (
+            "//\n"
+            "// File: sample.sv\n"
+            "// Company: IC Verimeter\n"
+            "// Author: icshunt.help@gmail.com\n"
+            "// Description: Bus interface sample\n"
+            "//\n"
+            "module sample();\n"
+            "endmodule\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [])
+
+    def test_file_header_rule_allows_mixed_comments(self):
+        rule = FileHeaderRule()
+        content = (
+            "// ==========================================\n"
+            "/*\n"
+            " * File: sample.sv\n"
+            " * Company: IC Verimeter\n"
+            " * Author: icshunt.help@gmail.com\n"
+            " */\n"
+            "// Description: Mixed comments test\n"
+            "// ==========================================\n"
+            "module sample();\n"
+            "endmodule\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [])
+
+    def test_file_header_rule_ast_context(self):
+        linter = NaturalDocLinter()
+        if not linter.is_available:
+            self.skipTest("verible not available")
+        rule = FileHeaderRule()
+        content = (
+            "//\n"
+            "// File: sample.sv\n"
+            "// Company: IC Verimeter\n"
+            "// Author: icshunt.help@gmail.com\n"
+            "// Description: Bus interface sample\n"
+            "//\n"
+            "module sample();\n"
+            "endmodule\n"
+        )
+        context = linter.prepare_context("sample.sv", content)
+        violations = rule.check("sample.sv", content, context)
+        self.assertEqual(violations, [])
+
+    def test_file_header_rule_ast_context_flags_missing_header(self):
+        linter = NaturalDocLinter()
+        if not linter.is_available:
+            self.skipTest("verible not available")
+        rule = FileHeaderRule()
+        content = "module sample();\nendmodule\n"
+        context = linter.prepare_context("sample.sv", content)
+        violations = rule.check("sample.sv", content, context)
         self.assertEqual(len(violations), 1)
         self.assertEqual(violations[0].rule_id, "[ND-001]")
 
@@ -111,6 +176,96 @@ class DocRulesTests(unittest.TestCase):
         violations = rule.check("sample.sv", content, None)
 
         self.assertEqual(violations, [])
+
+    def test_macro_rule_ignores_define_inside_block_comment(self):
+        """A `define inside /* ... */ must not trigger ND-007."""
+        rule = MacroDocumentationRule()
+        content = (
+            "`ifndef SAMPLE_SV\n"
+            "`define SAMPLE_SV\n"
+            "/*\n"
+            "`define Foo 1\n"
+            "*/\n"
+            "`endif\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [],
+                         "Commented-out `define inside /* */ triggered ND-007")
+
+    def test_macro_rule_ignores_define_inside_single_line_comment(self):
+        """A `define on a // comment line must not trigger ND-007."""
+        rule = MacroDocumentationRule()
+        content = (
+            "`ifndef SAMPLE_SV\n"
+            "`define SAMPLE_SV\n"
+            "// `define Foo 1\n"
+            "`endif\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [],
+                         "Commented-out `define on // line triggered ND-007")
+
+    def test_macro_rule_ignores_define_inside_inline_block_comment(self):
+        """A `define inside /* `define X 1 */ on one line must not trigger ND-007."""
+        rule = MacroDocumentationRule()
+        content = (
+            "`ifndef SAMPLE_SV\n"
+            "`define SAMPLE_SV\n"
+            "/* `define INLINE_DISABLED 1 */\n"
+            "`endif\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [],
+                         "Commented-out `define inside inline /* */ triggered ND-007")
+
+    def test_macro_rule_ignores_define_inside_multiline_block_comment(self):
+        """A `define buried in a multi-line /* */ block must not trigger ND-007."""
+        rule = MacroDocumentationRule()
+        content = (
+            "`ifndef SAMPLE_SV\n"
+            "`define SAMPLE_SV\n"
+            "/* This macro was disabled.\n"
+            "   `define DISABLED_MACRO 1\n"
+            "   Re-enable later.\n"
+            "*/\n"
+            "`endif\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [],
+                         "Commented-out `define in multi-line block comment triggered ND-007")
+
+    def test_macro_rule_still_flags_real_undocumented_define(self):
+        """An uncommented `define without docs must still trigger ND-007."""
+        rule = MacroDocumentationRule()
+        content = (
+            "`ifndef SAMPLE_SV\n"
+            "`define SAMPLE_SV\n"
+            "`define MY_MACRO 42\n"
+            "`endif\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(len(violations), 1)
+        self.assertIn("MY_MACRO", violations[0].message)
+
+    def test_macro_format_rule_ignores_define_inside_block_comment(self):
+        """A lower-case `define inside /* ... */ must not trigger WKL-003."""
+        rule = MacroFormatRule()
+        content = (
+            "/*\n"
+            "`define myLowerMacro 42\n"
+            "*/\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [],
+                         "Commented-out lower-case `define triggered WKL-003")
+
+    def test_macro_format_rule_ignores_define_inside_single_line_comment(self):
+        """A lower-case `define on a // line must not trigger WKL-003."""
+        rule = MacroFormatRule()
+        content = "// `define myBadMacro 1\n"
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [],
+                         "Commented-out lower-case `define on // line triggered WKL-003")
 
     def test_comment_spacing_rule_flags_missing_space_after_keyword(self):
         rule = CommentSpacingRule()

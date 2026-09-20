@@ -24,7 +24,8 @@ class MacroFormatRule(BaseRule):
         
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
-        lines = file_content.splitlines()
+        clean_content = self._mask_comments_and_strings(file_content)
+        lines = clean_content.splitlines()
         
         for i, line in enumerate(lines):
             stripped = line.strip()
