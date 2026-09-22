@@ -393,37 +393,72 @@ function activate(context) {
     context.subscriptions.push(
         vscode.commands.registerCommand('sv-nd-scribe.openHeaderTemplate', async (targetUri) => {
             try {
+                // Resolve a document URI for getScribeHome() walk-up
+                let docUri = targetUri;
+                if (!docUri && vscode.window.activeTextEditor) {
+                    docUri = vscode.window.activeTextEditor.document.uri;
+                }
+
                 let templateUri = null;
+
+                // Helper: check if a URI points to an existing file
+                const fileExists = async (uri) => {
+                    try { await vscode.workspace.fs.stat(uri); return true; } catch (e) { return false; }
+                };
+
+                // 1. Search workspace folders for project-local template
                 const wsFolders = vscode.workspace.workspaceFolders;
                 if (wsFolders && wsFolders.length > 0) {
                     for (const folder of wsFolders) {
-                        const cand1 = vscode.Uri.joinPath(folder.uri, '.sv-nd-scribe', 'header_template.txt');
-                        const cand2 = vscode.Uri.joinPath(folder.uri, 'agent', 'templates', 'header_template.txt');
-                        const cand3 = vscode.Uri.joinPath(folder.uri, 'header_template.txt');
-                        try {
-                            await vscode.workspace.fs.stat(cand1);
-                            templateUri = cand1;
-                            break;
-                        } catch (e) {}
-                        try {
-                            await vscode.workspace.fs.stat(cand2);
-                            templateUri = cand2;
-                            break;
-                        } catch (e) {}
-                        try {
-                            await vscode.workspace.fs.stat(cand3);
-                            templateUri = cand3;
-                            break;
-                        } catch (e) {}
-                    }
-                    if (!templateUri) {
-                        templateUri = vscode.Uri.joinPath(wsFolders[0].uri, 'agent', 'templates', 'header_template.txt');
+                        const candidates = [
+                            vscode.Uri.joinPath(folder.uri, '.sv-nd-scribe', 'header_template.txt'),
+                            vscode.Uri.joinPath(folder.uri, 'agent', 'templates', 'header_template.txt'),
+                            vscode.Uri.joinPath(folder.uri, 'header_template.txt'),
+                        ];
+                        for (const cand of candidates) {
+                            if (await fileExists(cand)) {
+                                templateUri = cand;
+                                break;
+                            }
+                        }
+                        if (templateUri) break;
                     }
                 }
+
+                // 2. Resolve via getScribeHome (walks up from document, checks env, etc.)
                 if (!templateUri) {
-                    const scribeHome = getScribeHome();
-                    templateUri = vscode.Uri.file(path.join(scribeHome || '', 'agent', 'templates', 'header_template.txt'));
+                    const scribeHome = getScribeHome(docUri);
+                    if (scribeHome) {
+                        const scribeCand = vscode.Uri.file(path.join(scribeHome, 'agent', 'templates', 'header_template.txt'));
+                        if (await fileExists(scribeCand)) {
+                            templateUri = scribeCand;
+                        }
+                    }
                 }
+
+                // 3. Last resort: check extension's own directory tree
+                if (!templateUri) {
+                    let extDir = __dirname;
+                    for (let i = 0; i < 5; i++) {
+                        const extCand = path.join(extDir, 'agent', 'templates', 'header_template.txt');
+                        if (fs.existsSync(extCand)) {
+                            templateUri = vscode.Uri.file(extCand);
+                            break;
+                        }
+                        const parent = path.dirname(extDir);
+                        if (parent === extDir) break;
+                        extDir = parent;
+                    }
+                }
+
+                if (!templateUri) {
+                    vscode.window.showErrorMessage(
+                        'SV Scribe: Could not locate header_template.txt. ' +
+                        'Set "sv-nd-scribe.scribeHome" in settings or the SVND_SCRIBE_HOME environment variable.'
+                    );
+                    return;
+                }
+
                 const doc = await vscode.workspace.openTextDocument(templateUri);
                 await vscode.window.showTextDocument(doc);
             } catch (err) {
