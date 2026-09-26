@@ -302,7 +302,7 @@ Output ONLY the NaturalDocs comment lines starting with `//`. Do not include mar
 def _has_valid_email(val: str) -> bool:
     if not val:
         return False
-    return bool(re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", val))
+    return bool(re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9_.-]+\.[a-zA-Z0-9-.]+", val))
 
 
 def get_git_config_author(dir_path: Optional[str] = None) -> Optional[str]:

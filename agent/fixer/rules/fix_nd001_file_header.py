@@ -171,7 +171,7 @@ class FixNd001(BaseFixer):
             for idx, l_str in enumerate(source_lines[:100]):
                 stripped = l_str.strip()
                 if start_idx == -1:
-                    if not stripped:
+                    if not stripped or stripped.startswith("`"):
                         continue
                     if stripped.startswith("/*"):
                         start_idx = idx
@@ -262,8 +262,8 @@ class FixNd001(BaseFixer):
 
         # Case 3a: File keyword mismatch or missing
         if "does not match actual filename" in msg:
-            if re.search(r"^\s*(?:\*|//|/\*|)\s*File:", target_line_text):
-                new_line = re.sub(r"(^\s*(?:\*|//|/\*|)\s*File:\s*).*$", rf"\g<1>{filename}", target_line_text)
+            if re.search(r"^\s*(?://|/\*|\*)?[\s*]*File:", target_line_text):
+                new_line = re.sub(r"(^\s*(?://|/\*|\*)?[\s*]*File:\s*).*$", rf"\g<1>{filename}", target_line_text)
                 if not new_line.endswith("\n"):
                     new_line += "\n"
             else:

@@ -88,6 +88,116 @@ class DocRulesTests(unittest.TestCase):
         violations = rule.check("sample.sv", content, None)
         self.assertEqual(violations, [])
 
+    def test_file_header_rule_allows_boxed_single_line_comments(self):
+        rule = FileHeaderRule()
+        content = (
+            "// **************************************************************************\n"
+            "// *\n"
+            "// * Copyright (c) 2026 my_company Technology. All rights reserved.          *\n"
+            "// **************************************************************************\n"
+            "// *     File: sample.sv\n"
+            "// *\n"
+            "// *     Author:      iam <iam@my_company.com>\n"
+            "// *\n"
+            "// *     Description: Boxed comment header test\n"
+            "// **************************************************************************\n"
+            "module sample();\n"
+            "endmodule\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [])
+
+    def test_file_header_rule_allows_boxed_single_line_comments_with_ast_context(self):
+        linter = NaturalDocLinter()
+        if not linter.is_available:
+            self.skipTest("verible not available")
+        rule = FileHeaderRule()
+        content = (
+            "// **************************************************************************\n"
+            "// *\n"
+            "// * Copyright (c) 2026 my_company Technology. All rights reserved.          *\n"
+            "// **************************************************************************\n"
+            "// *     File: sample.sv\n"
+            "// *\n"
+            "// *     Author:      iam <iam@my_company.com>\n"
+            "// *\n"
+            "// *     Description: Boxed comment header test\n"
+            "// **************************************************************************\n"
+            "module sample();\n"
+            "endmodule\n"
+        )
+        context = linter.prepare_context("sample.sv", content)
+        violations = rule.check("sample.sv", content, context)
+        self.assertEqual(violations, [])
+
+    def test_file_header_rule_detects_mismatched_filename_in_boxed_comments(self):
+        rule = FileHeaderRule()
+        content = (
+            "// **************************************************************************\n"
+            "// *     File: wrong_name.sv\n"
+            "// *     Author:      iam <iam@my_company.com>\n"
+            "// *     Description: Boxed comment header mismatch test\n"
+            "// **************************************************************************\n"
+            "module sample();\n"
+            "endmodule\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(len(violations), 1)
+        self.assertIn("does not match actual filename 'sample.sv'", violations[0].message)
+        self.assertEqual(violations[0].line, 2)
+
+    def test_file_header_rule_allows_preprocessor_directives_before_header(self):
+        rule = FileHeaderRule()
+        content = (
+            "`ifndef SAMPLE_SV\n"
+            "`define SAMPLE_SV\n"
+            "// **************************************************************************\n"
+            "// *     File: sample.sv\n"
+            "// *     Author:      iam <iam@my_company.com>\n"
+            "// *     Description: Directives before header test\n"
+            "// **************************************************************************\n"
+            "module sample();\n"
+            "endmodule\n"
+            "`endif\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(violations, [])
+
+    def test_file_header_rule_allows_preprocessor_directives_before_header_with_ast_context(self):
+        linter = NaturalDocLinter()
+        if not linter.is_available:
+            self.skipTest("verible not available")
+        rule = FileHeaderRule()
+        content = (
+            "`ifndef SAMPLE_SV\n"
+            "`define SAMPLE_SV\n"
+            "// **************************************************************************\n"
+            "// *     File: sample.sv\n"
+            "// *     Author:      iam <iam@my_company.com>\n"
+            "// *     Description: Directives before header test\n"
+            "// **************************************************************************\n"
+            "module sample();\n"
+            "endmodule\n"
+            "`endif\n"
+        )
+        context = linter.prepare_context("sample.sv", content)
+        violations = rule.check("sample.sv", content, context)
+        self.assertEqual(violations, [])
+
+    def test_file_header_rule_flags_missing_header_with_preprocessor_directives(self):
+        rule = FileHeaderRule()
+        content = (
+            "`ifndef SAMPLE_SV\n"
+            "`define SAMPLE_SV\n"
+            "module sample();\n"
+            "endmodule\n"
+            "`endif\n"
+        )
+        violations = rule.check("sample.sv", content, None)
+        self.assertEqual(len(violations), 1)
+        self.assertEqual(violations[0].rule_id, "[ND-001]")
+        self.assertIn("Missing block comment file header", violations[0].message)
+
     def test_file_header_rule_ast_context(self):
         linter = NaturalDocLinter()
         if not linter.is_available:

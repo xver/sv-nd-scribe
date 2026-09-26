@@ -437,13 +437,13 @@ class BaseRule(ABC):
     def _strip_comment_markers(self, line: str) -> str:
         stripped = line.strip()
         if stripped.startswith('//'):
-            return stripped[2:].strip()
-        if stripped.startswith('/*'):
+            stripped = stripped[2:].strip()
+        elif stripped.startswith('/*'):
             stripped = stripped[2:]
         if stripped.endswith('*/'):
             stripped = stripped[:-2]
-        if stripped.startswith('*'):
-            stripped = stripped[1:]
+        while stripped.startswith('*'):
+            stripped = stripped[1:].strip()
         return stripped.strip()
 
     def _extract_comments_from_text(self, file_content: str, start_line: int,

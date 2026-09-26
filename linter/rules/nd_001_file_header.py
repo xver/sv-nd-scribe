@@ -104,7 +104,7 @@ class FileHeaderRule(BaseRule):
             return line_num
 
         # 1. Check File: keyword (ALWAYS an ERROR)
-        file_match = re.search(r"^\s*(?:\*|//|/\*|)\s*File:\s*(.*)", header_text, re.IGNORECASE | re.MULTILINE)
+        file_match = re.search(r"^\s*(?://|/\*|\*)?[\s*]*File:\s*(.*)", header_text, re.IGNORECASE | re.MULTILINE)
         if not file_match:
             violations.append(
                 self.create_violation(
@@ -115,9 +115,9 @@ class FileHeaderRule(BaseRule):
                 )
             )
         else:
-            doc_file = file_match.group(1).strip()
+            doc_file = re.sub(r"[\s*]+$", "", file_match.group(1)).strip()
             if doc_file and doc_file != file_basename:
-                file_line = get_line_for_pattern(r"^\s*(?:\*|//|/\*|)\s*File:")
+                file_line = get_line_for_pattern(r"^\s*(?://|/\*|\*)?[\s*]*File:")
                 violations.append(
                     self.create_violation(
                         file_path=file_path,
@@ -132,11 +132,11 @@ class FileHeaderRule(BaseRule):
             return violations
 
         # Check Author format if present
-        author_match = re.search(r"^\s*(?:\*|//|/\*|)\s*Author:\s*(.*)", header_text, re.IGNORECASE | re.MULTILINE)
+        author_match = re.search(r"^\s*(?://|/\*|\*)?[\s*]*Author:\s*(.*)", header_text, re.IGNORECASE | re.MULTILINE)
         if author_match:
-            author_val = author_match.group(1).strip()
-            if author_val and "TODO" not in author_val and not re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", author_val):
-                author_line = get_line_for_pattern(r"^\s*(?:\*|//|/\*|)\s*Author:")
+            author_val = re.sub(r"[\s*]+$", "", author_match.group(1)).strip()
+            if author_val and "TODO" not in author_val and not re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9_.-]+\.[a-zA-Z0-9-.]+", author_val):
+                author_line = get_line_for_pattern(r"^\s*(?://|/\*|\*)?[\s*]*Author:")
                 violations.append(
                     self.create_violation(
                         file_path=file_path,
@@ -204,23 +204,35 @@ class FileHeaderRule(BaseRule):
         tokens = self._get_rawtokens(context)
         if tokens:
             source_bytes = self._source_bytes(content, context)
-            first_non_ws_token = None
-            first_idx = -1
+            first_comment_idx = -1
             for idx, t in enumerate(tokens):
-                if not self._is_whitespace_token(t):
-                    first_non_ws_token = t
-                    first_idx = idx
+                if self._is_whitespace_token(t):
+                    continue
+                tag = getattr(t, 'tag', '') or ''
+                text = getattr(t, 'text', '') or ''
+                if tag.startswith('`') or tag.startswith('PP_') or text.startswith('`'):
+                    # Skip preprocessor / compiler directives preceding file header (e.g. `ifndef, `define, `timescale)
+                    continue
+                if self._is_comment_token(t):
+                    first_comment_idx = idx
                     break
+                else:
+                    # Encountered code token before any file header comment block
+                    violations.append(
+                        self.create_violation(
+                            file_path=file_path,
+                            line=1,
+                            message="Missing block comment file header (/* */ or //). Every file must begin with a block comment header.",
+                            severity=RuleSeverity.ERROR
+                        )
+                    )
+                    return violations
 
-            if not first_non_ws_token:
-                return violations
-
-            if not self._is_comment_token(first_non_ws_token):
-                line_num = self._line_for_byte_offset(source_bytes, first_non_ws_token.start)
+            if first_comment_idx == -1:
                 violations.append(
                     self.create_violation(
                         file_path=file_path,
-                        line=line_num,
+                        line=1,
                         message="Missing block comment file header (/* */ or //). Every file must begin with a block comment header.",
                         severity=RuleSeverity.ERROR
                     )
@@ -229,7 +241,7 @@ class FileHeaderRule(BaseRule):
 
             header_tokens = []
             consecutive_newlines = 0
-            for t in tokens[first_idx:]:
+            for t in tokens[first_comment_idx:]:
                 if self._is_comment_token(t):
                     header_tokens.append(t)
                     consecutive_newlines = 0
@@ -253,23 +265,34 @@ class FileHeaderRule(BaseRule):
             return violations
 
         # Fallback when AST tokens are unavailable (e.g. standalone unit tests)
-        first_non_empty_idx = -1
+        first_candidate_idx = -1
         for idx, line in enumerate(lines):
-            if line.strip():
-                first_non_empty_idx = idx
-                break
+            stripped = line.strip()
+            if not stripped or stripped.startswith("`"):
+                # Skip blank lines and preprocessor directives (e.g. `ifndef, `define, `timescale)
+                continue
+            first_candidate_idx = idx
+            break
 
-        if first_non_empty_idx == -1:
+        if first_candidate_idx == -1:
+            violations.append(
+                self.create_violation(
+                    file_path=file_path,
+                    line=1,
+                    message="Missing block comment file header (/* */ or //). Every file must begin with a block comment header.",
+                    severity=RuleSeverity.ERROR
+                )
+            )
             return violations
 
-        first_line = lines[first_non_empty_idx].strip()
-        actual_line_num = first_non_empty_idx + 1
+        first_line = lines[first_candidate_idx].strip()
+        actual_line_num = first_candidate_idx + 1
 
         if not (first_line.startswith("/*") or first_line.startswith("//")):
             violations.append(
                 self.create_violation(
                     file_path=file_path,
-                    line=actual_line_num,
+                    line=1,
                     message="Missing block comment file header (/* */ or //). Every file must begin with a block comment header.",
                     severity=RuleSeverity.ERROR
                 )
@@ -278,7 +301,7 @@ class FileHeaderRule(BaseRule):
 
         header_lines = []
         in_block = False
-        for idx in range(first_non_empty_idx, len(lines)):
+        for idx in range(first_candidate_idx, len(lines)):
             line = lines[idx]
             stripped = line.strip()
             if in_block:
