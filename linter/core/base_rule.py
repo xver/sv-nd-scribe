@@ -461,19 +461,24 @@ class BaseRule(ABC):
             if not stripped:
                 if collecting_block_comment:
                     comments.insert(0, "")
+                    continue
+                if comments:
+                    break
                 continue
 
-            if stripped.startswith('/*') or stripped.endswith('*/') or stripped.startswith('*'):
+            if collecting_block_comment:
                 comments.insert(0, self._strip_comment_markers(line))
-                if '/*' in stripped and '*/' not in stripped:
-                    collecting_block_comment = True
-                if '*/' in stripped and '/*' not in stripped:
-                    collecting_block_comment = True
-                if '/*' in stripped and '*/' in stripped:
+                if '/*' in stripped:
                     collecting_block_comment = False
                 continue
 
-            if stripped.startswith('//'):
+            if stripped.endswith('*/'):
+                comments.insert(0, self._strip_comment_markers(line))
+                if '/*' not in stripped:
+                    collecting_block_comment = True
+                continue
+
+            if stripped.startswith('/*') or stripped.startswith('*') or stripped.startswith('//'):
                 comments.insert(0, self._strip_comment_markers(line))
                 continue
 
@@ -648,7 +653,7 @@ class BaseRule(ABC):
             for keyword in keywords:
                 pattern = (
                     r'(?i)\b' + re.escape(keyword) +
-                    r'\s*:\s*([a-zA-Z_][a-zA-Z0-9_]*)'
+                    r'\s*:\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*|\[[^\]]+\])*)'
                 )
                 match = re.search(pattern, line)
                 if match:

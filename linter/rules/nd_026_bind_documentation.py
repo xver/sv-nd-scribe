@@ -25,6 +25,31 @@ class BindDocumentationRule(BaseRule):
 
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
+
+        # AST node driven check
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            nodes = self._find_tree_nodes_by_tag(context, "kBindDirective") + self._find_tree_nodes_by_tag(context, "kBindDeclaration")
+            for node in nodes:
+                line = self._node_start_line(node, file_content, context)
+                comments = self._comments_before_node(node, file_content, context)
+                has_kw = False
+                if comments:
+                    for c in comments:
+                        if re.search(r"^\s*(?://|/\*|\*|)\s*bind\s*:", c, re.IGNORECASE):
+                            has_kw = True
+                            break
+                if not has_kw:
+                    violations.append(
+                        self.create_violation(
+                            file_path=file_path,
+                            line=line,
+                            message="Bind directive is missing preceding NaturalDocs comment ('// Bind:')."
+                        )
+                    )
+            return violations
+
+        # Fallback text parsing
         lines = file_content.splitlines()
         for i, line in enumerate(lines):
             stripped = line.strip()

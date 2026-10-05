@@ -9,7 +9,7 @@ from linter.core.base_rule import BaseRule, RuleViolation, RuleSeverity
 class TypedefSuffixRule(BaseRule):
     """
     [WKL-002] Typedef Suffix Rule
-    Checks that non-enum typedefs end in '_t' and enums end in '_e'.
+    Checks that non-enum typedefs end in '_t' and enums end in '_e', '_enum_t', or '_t'.
     """
     @property
     def rule_id(self) -> str:
@@ -17,7 +17,7 @@ class TypedefSuffixRule(BaseRule):
     
     @property
     def description(self) -> str:
-        return "Non-enum typedefs must end in '_t', enums must end in '_e'."
+        return "Non-enum typedefs must end in '_t', enums must end in '_e', '_enum_t', or '_t'."
         
     def default_severity(self) -> RuleSeverity:
         return RuleSeverity.ERROR
@@ -26,8 +26,9 @@ class TypedefSuffixRule(BaseRule):
         violations = []
 
         # AST node driven check
-        type_nodes = self._find_tree_nodes_by_tag(context, "kTypeDeclaration")
-        if type_nodes:
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            type_nodes = self._find_tree_nodes_by_tag(context, "kTypeDeclaration")
             for node in type_nodes:
                 text = getattr(node, 'text', '') or ""
                 is_enum = "enum" in text
@@ -35,12 +36,12 @@ class TypedefSuffixRule(BaseRule):
                 if m:
                     t_name = m.group(1)
                     line = self._node_start_line(node, file_content, context)
-                    if is_enum and not t_name.endswith("_e"):
+                    if is_enum and not t_name.endswith(("_e", "_enum_t", "_t")):
                         violations.append(
                             self.create_violation(
                                 file_path=file_path,
                                 line=line,
-                                message=f"Enum typedef '{t_name}' must end in '_e'."
+                                message=f"Enum typedef '{t_name}' must end in '_e', '_enum_t', or '_t'."
                             )
                         )
                     elif not is_enum and not t_name.endswith("_t"):
@@ -60,12 +61,12 @@ class TypedefSuffixRule(BaseRule):
             if match:
                 t_name = match.group(1)
                 is_enum = "enum" in line
-                if is_enum and not t_name.endswith("_e"):
+                if is_enum and not t_name.endswith(("_e", "_enum_t", "_t")):
                     violations.append(
                         self.create_violation(
                             file_path=file_path,
                             line=i + 1,
-                            message=f"Enum typedef '{t_name}' must end in '_e'."
+                            message=f"Enum typedef '{t_name}' must end in '_e', '_enum_t', or '_t'."
                         )
                     )
                 elif not is_enum and not t_name.endswith("_t"):

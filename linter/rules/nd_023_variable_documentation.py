@@ -27,8 +27,9 @@ class VariableDocumentationRule(BaseRule):
         violations = []
 
         # AST node driven check
-        data_nodes = self._find_tree_nodes_by_tag(context, "kDataDeclaration")
-        if data_nodes:
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            data_nodes = self._find_tree_nodes_by_tag(context, "kDataDeclaration")
             for node in data_nodes:
                 parent = getattr(node, 'parent', None)
                 in_excl = False
@@ -89,10 +90,19 @@ class VariableDocumentationRule(BaseRule):
         in_param_header = False
         in_covergroup = False
         in_constraint = False
+        in_block_comment = False
 
         for i, line in enumerate(lines):
             stripped = line.strip()
-            if not stripped or stripped.startswith("//") or stripped.startswith("/*") or stripped.startswith("*"):
+            if in_block_comment:
+                if "*/" in stripped:
+                    in_block_comment = False
+                continue
+            if stripped.startswith("/*"):
+                if "*/" not in stripped:
+                    in_block_comment = True
+                continue
+            if not stripped or stripped.startswith("//") or stripped.startswith("*"):
                 continue
 
             # Track struct/union/enum block scope
@@ -181,7 +191,7 @@ class VariableDocumentationRule(BaseRule):
             # Plain variable or interface instance (e.g. logic [31:0] addr; or nd_bus_if bus_if();)
             # Also matches parameter/localparam declarations.
             match = re.match(
-                r"^\s*(?:rand\s+|randc\s+)?(?:parameter\s+|localparam\s+)?(?:logic|bit|int|byte|string|time|real|[a-zA-Z_][a-zA-Z0-9_]*)\s+(?:\[[^\]]+\]\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:;|=|\([^)]*\)\s*;)?",
+                r"^\s*(?:rand\s+|randc\s+)?(?:parameter\s+|localparam\s+)?(?:logic|bit|int|byte|string|time|real|[a-zA-Z_][a-zA-Z0-9_]*)\s+(?:\[[^\]]+\]\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:;|=|(?:\([^)]*\)\s*;))",
                 line
             )
             if match:

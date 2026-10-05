@@ -6,7 +6,7 @@ from typing import Any, List
 from linter.core.base_rule import BaseRule, RuleViolation, RuleSeverity
 
 _ASSIGN_NAME_RE = re.compile(
-    r'\bassign\s+(?:(?:\([^)]*\)|#[0-9a-zA-Z_]+)\s+)*\{?\s*([a-zA-Z_][a-zA-Z0-9_]*)'
+    r'\bassign\s+(?:(?:\([^)]*\)|#[0-9a-zA-Z_()#\s]+)\s+)*\{?\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)'
 )
 
 
@@ -29,6 +29,28 @@ class AssignDocumentationRule(BaseRule):
 
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
+
+        # AST node driven check
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            nodes = self._find_tree_nodes_by_tag(context, "kContinuousAssignmentStatement")
+            for node in nodes:
+                text = getattr(node, 'text', '') or ""
+                m = _ASSIGN_NAME_RE.search(text)
+                sig_name = m.group(1) if m else "item"
+                line = self._node_start_line(node, file_content, context)
+                comments = self._comments_before_node(node, file_content, context)
+                if not comments:
+                    violations.append(
+                        self.create_violation(
+                            file_path=file_path,
+                            line=line,
+                            message=f"Continuous assignment '{sig_name}' is missing preceding NaturalDocs comment ('// Assign: {sig_name}')."
+                        )
+                    )
+            return violations
+
+        # Fallback text parsing
         lines = file_content.splitlines()
         for i, line in enumerate(lines):
             stripped = line.strip()

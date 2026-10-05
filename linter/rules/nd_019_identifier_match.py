@@ -83,40 +83,45 @@ class IdentifierMatchRule(BaseRule):
             "kProgramDeclaration": ("program", ["Program", "program"], r"\bprogram\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kBindDirective": ("bind", BIND_KEYWORDS, r"\bbind\s+(?:[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)?\s+)+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|$)"),
             "kBindDeclaration": ("bind", BIND_KEYWORDS, r"\bbind\s+(?:[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)?\s+)+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|$)"),
-            "kContinuousAssignmentStatement": ("assign", ASSIGN_KEYWORDS, r"\bassign\s+(?:#\s*\([^)]*\)\s*)?([a-zA-Z_][a-zA-Z0-9_]*)"),
+            "kContinuousAssignmentStatement": ("assign", ASSIGN_KEYWORDS, r"\bassign\s+(?:(?:\([^)]*\)|#[0-9a-zA-Z_()#\s]+)\s+)*\{?\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)"),
+            "kTypeDeclaration": ("typedef", TYPE_KEYWORDS, r"\btypedef\b.*?\b([a-zA-Z_][a-zA-Z0-9_]*)\s*;"),
+            "kPreprocessorDefine": ("define", MACRO_KEYWORDS, r"`define\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
         }
 
         # AST node driven check
-        has_ast = False
-        for tag, (c_kw, kw_list, pattern) in tag_to_keyword.items():
-            nodes = self._find_tree_nodes_by_tag(context, tag)
-            if nodes:
-                has_ast = True
-                for node in nodes:
-                    text = getattr(node, 'text', '') or ""
-                    # Skip out-of-body method implementations (e.g. function void Class::method)
-                    if tag in ["kFunctionDeclaration", "kTaskDeclaration"] and "::" in text:
-                        continue
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            for tag, (c_kw, kw_list, pattern) in tag_to_keyword.items():
+                nodes = self._find_tree_nodes_by_tag(context, tag)
+                if nodes:
+                    for node in nodes:
+                        text = getattr(node, 'text', '') or ""
+                        # Skip out-of-body method implementations (e.g. function void Class::method)
+                        if tag in ["kFunctionDeclaration", "kTaskDeclaration"] and "::" in text:
+                            continue
 
-                    actual_name = self._extract_node_code_name(node, pattern)
-                    if actual_name:
-                        line = self._node_start_line(node, file_content, context)
-                        comments = self._get_comments(node, file_content, context, line)
-                        if comments:
-                            doc_name = self._extract_documented_name(comments, kw_list)
-                            if doc_name and doc_name != actual_name:
-                                violations.append(
-                                    self.create_violation(
-                                        file_path=file_path,
-                                        line=line,
-                                        message=f"Documented identifier '{doc_name}' does not match code identifier '{actual_name}'."
-                                    )
-                                )
+                        actual_name = self._extract_node_code_name(node, pattern)
+                        if actual_name:
+                            line = self._node_start_line(node, file_content, context)
+                            comments = self._get_comments(node, file_content, context, line)
+                            if comments:
+                                doc_name = self._extract_documented_name(comments, kw_list)
+                                if doc_name:
+                                    is_mismatch = doc_name != actual_name
+                                    if tag == "kContinuousAssignmentStatement" and is_mismatch:
+                                        if actual_name.endswith("." + doc_name) or doc_name == actual_name.split(".")[-1]:
+                                            is_mismatch = False
+                                    if is_mismatch:
+                                        violations.append(
+                                            self.create_violation(
+                                                file_path=file_path,
+                                                line=line,
+                                                message=f"Documented identifier '{doc_name}' does not match code identifier '{actual_name}'."
+                                            )
+                                        )
 
-        # Also check kDataDeclaration and kNetDeclaration nodes in AST mode using SymbolIdentifier
-        decl_nodes = self._find_tree_nodes_by_tag(context, "kDataDeclaration") + self._find_tree_nodes_by_tag(context, "kNetDeclaration")
-        if decl_nodes:
-            has_ast = True
+            # Also check kDataDeclaration and kNetDeclaration nodes in AST mode using SymbolIdentifier
+            decl_nodes = self._find_tree_nodes_by_tag(context, "kDataDeclaration") + self._find_tree_nodes_by_tag(context, "kNetDeclaration")
             for node in decl_nodes:
                 vars_found = []
                 if hasattr(node, 'find_all'):
@@ -140,7 +145,6 @@ class IdentifierMatchRule(BaseRule):
                                     )
                                 )
 
-        if has_ast:
             return violations
 
         # Fallback text parsing
@@ -201,20 +205,24 @@ class IdentifierMatchRule(BaseRule):
                         )
 
             # Assign matching: assign <lhs> = ...
-            assign_match = re.match(r"^\s*assign\s+(?:#\s*\([^)]*\)\s*)?([a-zA-Z_][a-zA-Z0-9_]*)", line)
+            assign_match = re.match(r"^\s*assign\s+(?:(?:\([^)]*\)|#[0-9a-zA-Z_()#\s]+)\s+)*\{?\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)", line)
             if assign_match:
                 actual_name = assign_match.group(1)
                 comments = self._get_comments(None, file_content, None, i + 1)
                 if comments:
                     doc_name = self._extract_documented_name(comments, ASSIGN_KEYWORDS)
-                    if doc_name and doc_name != actual_name:
-                        violations.append(
-                            self.create_violation(
-                                file_path=file_path,
-                                line=i + 1,
-                                message=f"Documented identifier '{doc_name}' does not match code identifier '{actual_name}'."
+                    if doc_name:
+                        is_mismatch = doc_name != actual_name
+                        if actual_name.endswith("." + doc_name) or doc_name == actual_name.split(".")[-1]:
+                            is_mismatch = False
+                        if is_mismatch:
+                            violations.append(
+                                self.create_violation(
+                                    file_path=file_path,
+                                    line=i + 1,
+                                    message=f"Documented identifier '{doc_name}' does not match code identifier '{actual_name}'."
+                                )
                             )
-                        )
 
             # Typedef matching
             type_match = re.match(r"^\s*typedef\s+(?:enum\b|struct\b|union\b)?.*?\b([a-zA-Z_][a-zA-Z0-9_]*)\s*;", line)

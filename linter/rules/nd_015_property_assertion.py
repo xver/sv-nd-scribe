@@ -25,8 +25,41 @@ class PropertyAssertionRule(BaseRule):
 
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
+
+        # AST node driven check
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            nodes = self._find_tree_nodes_by_tag(context, "kPropertyDeclaration")
+            for node in nodes:
+                text = getattr(node, 'text', '') or ""
+                prop_name = ""
+                m = re.search(r"\bproperty\s+([a-zA-Z_][a-zA-Z0-9_]*)", text)
+                if m:
+                    prop_name = m.group(1)
+                elif hasattr(node, 'find_all'):
+                    try:
+                        id_nodes = list(node.find_all(lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'))
+                        if id_nodes:
+                            prop_name = id_nodes[0].text.strip()
+                    except Exception:
+                        pass
+                if not prop_name:
+                    prop_name = "property"
+
+                line = self._node_start_line(node, file_content, context)
+                comments = self._comments_before_node(node, file_content, context)
+                if not comments or not any("property" in c.lower() or "assertion" in c.lower() for c in comments):
+                    violations.append(
+                        self.create_violation(
+                            file_path=file_path,
+                            line=line,
+                            message=f"Property '{prop_name}' is missing preceding NaturalDocs documentation."
+                        )
+                    )
+            return violations
+
+        # Fallback text parsing
         lines = file_content.splitlines()
-        
         for i, line in enumerate(lines):
             match = re.match(r"^\s*property\s+([a-zA-Z_][a-zA-Z0-9_]*)", line)
             if match:

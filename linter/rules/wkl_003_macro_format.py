@@ -24,6 +24,38 @@ class MacroFormatRule(BaseRule):
         
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
+
+        # AST node driven check
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            nodes = self._find_tree_nodes_by_tag(context, "kPreprocessorDefine")
+            for node in nodes:
+                text = (getattr(node, 'text', '') or "").strip()
+                macro_name = ""
+                if hasattr(node, 'find_all'):
+                    try:
+                        id_nodes = list(node.find_all(lambda n: getattr(n, 'tag', '') == 'PP_Identifier'))
+                        if id_nodes:
+                            macro_name = id_nodes[0].text.strip()
+                    except Exception:
+                        pass
+                if not macro_name:
+                    m = re.search(r"^`define\s+([a-zA-Z_][a-zA-Z0-9_]*)", text)
+                    if m:
+                        macro_name = m.group(1)
+
+                if macro_name and not re.match(r"^[A-Z0-9_]+$", macro_name):
+                    line = self._node_start_line(node, file_content, context)
+                    violations.append(
+                        self.create_violation(
+                            file_path=file_path,
+                            line=line,
+                            message=f"Macro `{macro_name}` should be in UPPER_SNAKE_CASE."
+                        )
+                    )
+            return violations
+
+        # Fallback text parsing
         clean_content = self._mask_comments_and_strings(file_content)
         lines = clean_content.splitlines()
         

@@ -6,7 +6,7 @@ from agent.fixer.base_fixer import BaseFixer, FixProposal
 from agent.fixer.doc_helper import build_naturaldocs_comment, extract_name_from_violation
 
 _ASSIGN_RE = re.compile(
-    r'\bassign\s+(?:(?:\([^)]*\)|#[0-9a-zA-Z_]+)\s+)*\{?\s*([a-zA-Z_][a-zA-Z0-9_]*)'
+    r'\bassign\s+(?:(?:\([^)]*\)|#[0-9a-zA-Z_()#\s]+)\s+)*\{?\s*([a-zA-Z_][a-zA-Z0-9_]*(?:\.[a-zA-Z_][a-zA-Z0-9_]*)*)'
 )
 
 
@@ -28,19 +28,19 @@ class FixNd028(BaseFixer):
         indent = line[: len(line) - len(line.lstrip())]
 
         name = extract_name_from_violation(violation)
-        if not name or name.lower() in ("assign", "item"):
-            m = _ASSIGN_RE.search(line)
-            if m:
-                name = m.group(1)
-            elif line.strip() == "" and line_idx + 1 < len(source_lines):
-                next_line = source_lines[line_idx + 1]
-                m = _ASSIGN_RE.search(next_line)
-                if m:
-                    name = m.group(1)
+        m = _ASSIGN_RE.search(line)
+        if not m and line.strip() == "" and line_idx + 1 < len(source_lines):
+            m = _ASSIGN_RE.search(source_lines[line_idx + 1])
+
+        if m:
+            code_name = m.group(1)
+            if not name or name.lower() in ("assign", "item") or (name and code_name.startswith(name + ".")):
+                name = code_name
 
         if not name or name.lower() == "assign":
             name = "item"
 
+        deep_synth = bool(config and config.get("deep_synth", False))
         doc_comment, llm_generated = build_naturaldocs_comment(
             tag="Assign",
             name=name,
@@ -50,6 +50,7 @@ class FixNd028(BaseFixer):
             kind_label="assignment",
             provider=kwargs.get("provider"),
             skill_name="nd_comment",
+            deep_synth=deep_synth,
         )
         return FixProposal(
             rule_id="ND-028",

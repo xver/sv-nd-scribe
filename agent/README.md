@@ -19,6 +19,8 @@ The **SV ND Scribe AI Agent** is an automated code fixer and AI assistant integr
   - [2. openai (OpenAI / Azure OpenAI)](#2-openai-openai--azure-openai)
   - [3. ollama (Local Ollama Models)](#3-ollama-local-ollama-models)
 - [File Header Template Management](#file-header-template-management)
+- [Placeholder & TODO [SVND] Resolution (`TodoResolver`)](#placeholder--todo-svnd-resolution-todoresolver)
+- [Nested & Redundant Comment Sanitization](#nested--redundant-comment-sanitization)
 - [Model Context Protocol (MCP) Server](#model-context-protocol-mcp-server)
   - [Exposed MCP Tools](#exposed-mcp-tools)
   - [Client Integration Configuration](#client-integration-configuration)
@@ -61,6 +63,15 @@ python3 -m agent --dry-run tests/test_bad_sv/nd_driver.sv
 # Apply fixes filtered by specific rule IDs
 python3 -m agent --rules ND-001,ND-009,WKL-005 --batch tests/test_bad_sv/nd_driver.sv
 
+# Resolve a specific TODO [SVND]: marker near a line number (e.g. line 42)
+python3 -m agent --resolve-todo 42 src/my_module.sv
+
+# Resolve all TODO [SVND]: and placeholder markers across a file
+python3 -m agent --resolve-todo src/my_module.sv
+
+# Remove redundant and nested comment markers (e.g. // /* or // //)
+python3 -m agent --clean-comments src/my_module.sv
+
 # Re-apply corporate header template to a file
 python3 -m agent --overwrite-header src/my_module.sv
 ```
@@ -80,6 +91,8 @@ python3 -m agent --overwrite-header src/my_module.sv
 | `--llm <PROVIDER>` | Select LLM provider backend: `none` (default), `openai`, or `ollama`. |
 | `--no-backup` | Disable generation of `.bak` backup files when writing changes. |
 | `--json` | Output execution diagnostics and results in machine-readable JSON. |
+| `--clean-comments` | Strip redundant and nested comment markers (e.g. `// /*`, `/* //`, `// //`). |
+| `--resolve-todo [LINE]` | Resolve `TODO [SVND]:` and placeholder markers at target line or across file. |
 | `--overwrite-header` | Overwrite the target file's header block using the active `header_template.txt`. |
 | `--open-header-template` | Print the resolved path and content of the active `header_template.txt`. |
 | `--reset-header-template` | Restore the active `header_template.txt` to the built-in factory default. |
@@ -158,6 +171,41 @@ The `Author` field is automatically resolved using a priority cascade:
 5. **Custom template static author**: Non-placeholder `Author:` line in `header_template.txt`.
 6. **Git configuration**: Auto-detected from `git config user.name` and `git config user.email` (format: `Name <email>`).
 7. **Fallback**: `"TODO_AUTHOR"` (triggers an actionable warning on how to configure).
+
+---
+
+## Placeholder & TODO [SVND] Resolution (`TodoResolver`)
+
+The agent includes the `TodoResolver` engine to detect and resolve placeholder comments and `TODO [SVND]:` stubs in SystemVerilog source files:
+
+- **Targeted Line Resolution**: Provide a line number (`--resolve-todo <LINE>`) to target a specific marker (ideal for editor cursors and Quick Fix actions). The resolver inspects nearby lines within +/- 5 lines.
+- **Whole-File Resolution**: Run `--resolve-todo` without a line number to resolve all markers across the entire file.
+- **No Generic Boilerplate**: Strictly complies with the `sv-technical-doc` skill standards. It outlaws tautological phrases like `"definition for item"` or `"definition for tb if"`, synthesizing domain-accurate descriptions based on actual code context.
+- **Tag Correction**: Automatically updates generic construct tags to specific target identifiers:
+  - Rewrites `// Process: item` to specific functional names (e.g., `// Process: abs_agent0_connect`).
+  - Rewrites `// Assign: tb_if` to full hierarchical signal paths (e.g., `// Assign: tb_if.m_abs_agent1_if.ready`).
+- **Context-Aware Inference**: Analyzes UVM variables, virtual interfaces, configuration objects, driver/monitor handles, processes, and continuous assignment logic (handshake tie-offs, resets, and passthrough multiplexers).
+- **LLM Synthesis Fallback**: When an LLM provider (`--llm openai` or `ollama`) is active, leverages semantic LLM prompts while maintaining deterministic fallbacks when offline.
+
+```bash
+# Resolve a single marker at line 35
+python3 -m agent --resolve-todo 35 src/tb_env.sv
+
+# Resolve all TODOs in file with dry-run preview
+python3 -m agent --resolve-todo --dry-run src/tb_env.sv
+```
+
+---
+
+## Nested & Redundant Comment Sanitization
+
+When documentation is edited incrementally or generated across multiple passes, comment markers can become nested (e.g., `// /* ... */`, `/* // ... */`, or `// //`).
+
+The `--clean-comments` flag sanitizes these artifacts in memory and writes clean formatting atomically:
+
+```bash
+python3 -m agent --clean-comments src/my_module.sv
+```
 
 ---
 

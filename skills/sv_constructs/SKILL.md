@@ -48,6 +48,10 @@ Rules:
 - All signals inside the interface MUST be documented with `// Variable:`.
 - `_if` suffix convention (naming §15).
 - `endinterface : <name>` end label required.
+- Container interfaces (e.g. `tb_template_if`): Document role bundling
+  virtual interfaces (`m_abs_agent*_if`) and link interfaces for DUT comms.
+- Prohibited: Generic tautologies like `SystemVerilog element definition for...`.
+- Keep every line strictly below 80 characters.
 
 ## Module (sv_documentation_rules.md §20)
 

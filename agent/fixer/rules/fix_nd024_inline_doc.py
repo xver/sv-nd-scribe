@@ -32,8 +32,8 @@ class FixNd024(BaseFixer):
         if "//" in stripped or "/*" in stripped:
             return None
 
-        desc = f"TODO description for {name}"
-        fixed_line = f"{stripped}///{desc}\n"
+        desc = f"TODO [SVND]: description for {name}"
+        fixed_line = f"{stripped} /// {desc}\n"
 
         return FixProposal(
             rule_id="ND-024",

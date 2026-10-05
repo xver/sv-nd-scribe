@@ -27,8 +27,9 @@ class CovergroupDocumentationRule(BaseRule):
         violations = []
 
         # AST node driven check
-        nodes = self._find_tree_nodes_by_tag(context, "kCovergroupDeclaration")
-        if nodes:
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            nodes = self._find_tree_nodes_by_tag(context, "kCovergroupDeclaration")
             for node in nodes:
                 name = ""
                 if hasattr(node, 'find_all'):

@@ -27,11 +27,11 @@ class OneVariablePerDeclarationRule(BaseRule):
         violations = []
 
         # 1. AST node driven check using Verible AST
-        data_nodes = self._find_tree_nodes_by_tag(context, "kDataDeclaration")
-        net_nodes = self._find_tree_nodes_by_tag(context, "kNetDeclaration")
-        decl_nodes = data_nodes + net_nodes
-
-        if decl_nodes:
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            data_nodes = self._find_tree_nodes_by_tag(context, "kDataDeclaration")
+            net_nodes = self._find_tree_nodes_by_tag(context, "kNetDeclaration")
+            decl_nodes = data_nodes + net_nodes
             for node in decl_nodes:
                 # Exclude type declarations, typedefs, or package imports
                 parent = getattr(node, 'parent', None)

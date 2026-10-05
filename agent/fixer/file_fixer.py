@@ -108,6 +108,14 @@ class FileFixer:
                 
         return modified_lines
 
+    def clean_nested_comments_in_memory(self, lines: List[str]) -> Tuple[List[str], int]:
+        """
+        Identify and remove all nested comment markers in block comments and redundant marks in single-line comments.
+        Also deduplicates duplicate stub comment blocks.
+        """
+        from .doc_helper import clean_all_nested_comments
+        return clean_all_nested_comments(lines)
+
     def handle_backup(self, filepath: str) -> bool:
         """
         Perform backup according to Tier 1 / 2 / 3 rules.

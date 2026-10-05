@@ -47,6 +47,22 @@ class SvScribeCodeActionProvider {
             if (cleanRuleId && !seenRules.has(cleanRuleId)) {
                 seenRules.add(cleanRuleId);
 
+                if (cleanRuleId === 'SVND') {
+                    const resolveAction = new vscode.CodeAction(
+                        'SV Scribe: Resolve TODO [SVND] with Agent',
+                        vscode.CodeActionKind.QuickFix
+                    );
+                    resolveAction.command = {
+                        command: 'sv-nd-scribe.resolveTodo',
+                        title: 'SV Scribe: Resolve TODO [SVND] with Agent',
+                        arguments: [document.uri, diagnostic.range.start.line + 1]
+                    };
+                    resolveAction.diagnostics = [diagnostic];
+                    resolveAction.isPreferred = true;
+                    actions.unshift(resolveAction);
+                    continue;
+                }
+
                 if (cleanRuleId === 'ND-001') {
                     const action = new vscode.CodeAction(
                         'SV Scribe: Fix [ND-001] (File Header)',
@@ -162,6 +178,21 @@ class SvScribeCodeActionProvider {
                     continue;
                 }
 
+                if (cleanRuleId === 'ND-003') {
+                    const cleanCommentAction = new vscode.CodeAction(
+                        'SV Scribe: Remove Redundant / Nested Comment Markers',
+                        vscode.CodeActionKind.QuickFix
+                    );
+                    cleanCommentAction.command = {
+                        command: 'sv-nd-scribe.cleanNestedComments',
+                        title: 'SV Scribe: Remove Redundant / Nested Comment Markers',
+                        arguments: [document.uri]
+                    };
+                    cleanCommentAction.diagnostics = [diagnostic];
+                    cleanCommentAction.isPreferred = true;
+                    actions.push(cleanCommentAction);
+                }
+
                 const action = new vscode.CodeAction(
                     `SV Scribe: Fix [${cleanRuleId}]`,
                     vscode.CodeActionKind.QuickFix
@@ -172,7 +203,9 @@ class SvScribeCodeActionProvider {
                     arguments: [document.uri, cleanRuleId]
                 };
                 action.diagnostics = [diagnostic];
-                action.isPreferred = true;
+                if (cleanRuleId !== 'ND-003') {
+                    action.isPreferred = true;
+                }
                 actions.push(action);
             }
         }
@@ -252,6 +285,53 @@ class SvScribeCodeActionProvider {
                 arguments: [document.uri]
             };
             actions.push(resetTmplAction);
+        }
+
+        // Check if cursor is on or near a 'TODO [SVND]:' or placeholder marker (within +/- 2 lines)
+        const todoPattern = /(?:TODO\s*(?:\[SVND\])?:?|(?<!\w)Description\s+for\s+|Add\s+description\s+for\s+)/i;
+        let todoLine = -1;
+        const currentLineNum = range.start.line;
+        if (currentLineNum >= 0 && currentLineNum < document.lineCount) {
+            if (todoPattern.test(document.lineAt(currentLineNum).text)) {
+                todoLine = currentLineNum;
+            } else {
+                const startCheck = Math.max(0, currentLineNum - 2);
+                const endCheck = Math.min(document.lineCount - 1, currentLineNum + 2);
+                for (let l = startCheck; l <= endCheck; l++) {
+                    if (todoPattern.test(document.lineAt(l).text)) {
+                        todoLine = l;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (todoLine !== -1 && !actions.some(a => a.command && a.command.command === 'sv-nd-scribe.resolveTodo')) {
+            const resolveAction = new vscode.CodeAction(
+                'SV Scribe: Resolve description with Agent',
+                vscode.CodeActionKind.QuickFix
+            );
+            resolveAction.command = {
+                command: 'sv-nd-scribe.resolveTodo',
+                title: 'SV Scribe: Resolve TODO [SVND] with Agent',
+                arguments: [document.uri, todoLine + 1]
+            };
+            resolveAction.isPreferred = true;
+            actions.unshift(resolveAction);
+        }
+
+        // Offer resolve all if any TODO [SVND] exists in file
+        if (todoPattern.test(document.getText()) && !actions.some(a => a.command && a.command.command === 'sv-nd-scribe.resolveAllTodos')) {
+            const resolveAllAction = new vscode.CodeAction(
+                'SV Scribe: Resolve all TODO [SVND] markers in file',
+                vscode.CodeActionKind.QuickFix
+            );
+            resolveAllAction.command = {
+                command: 'sv-nd-scribe.resolveAllTodos',
+                title: 'SV Scribe: Resolve all TODO [SVND] markers in file',
+                arguments: [document.uri]
+            };
+            actions.push(resolveAllAction);
         }
 
         // If there are diagnostics in the file, also offer "Fix all auto-fixable issues in file"
@@ -387,6 +467,32 @@ function activate(context) {
     context.subscriptions.push(
         vscode.commands.registerCommand('sv-nd-scribe.fixRule', async (targetUri, ruleId) => {
             await runFixer(targetUri, ruleId);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('sv-nd-scribe.resolveTodo', async (targetUri, lineNumber) => {
+            await runResolveTodo(targetUri, lineNumber);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('sv-nd-scribe.resolveAllTodos', async (targetUri) => {
+            await runResolveTodo(targetUri, null);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('sv-nd-scribe.cleanNestedComments', async (targetUri) => {
+            let uri = targetUri;
+            if (!uri && vscode.window.activeTextEditor) {
+                uri = vscode.window.activeTextEditor.document.uri;
+            }
+            if (!uri) {
+                vscode.window.showInformationMessage('No active SystemVerilog document to clean.');
+                return;
+            }
+            await runFixer(uri, 'ND-003', ['--clean-comments']);
         })
     );
 
@@ -639,7 +745,7 @@ function lintFiles(documents) {
 
     const filePaths = documents.map(doc => doc.uri.fsPath);
     const env = getExecutionEnv(scribeHome);
-    const execOptions = { env };
+    const execOptions = { env, timeout: 30000 };
     if (scribeHome) {
         execOptions.cwd = scribeHome;
     }
@@ -707,6 +813,35 @@ function lintFiles(documents) {
             }
         }
 
+        // Scan documents for TODO [SVND] markers and create Info diagnostics
+        for (const doc of documents) {
+            const targetKey = doc.uri.toString();
+            let entry = diagnosticsMap.get(targetKey);
+            if (!entry) {
+                entry = { uri: doc.uri, list: [] };
+                diagnosticsMap.set(targetKey, entry);
+            }
+            const docText = doc.getText();
+            const todoRegex = /(?:TODO\s*(?:\[SVND\])?:?\s*(.*)$|(?<!\w)Description\s+for\s+(.*)$)/gim;
+            let m;
+            while ((m = todoRegex.exec(docText)) !== null) {
+                const pos = doc.positionAt(m.index);
+                const line = doc.lineAt(pos.line).text;
+                const matchStart = line.search(/(?:TODO\s*(?:\[SVND\])?:?|(?<!\w)Description\s+for\s+)/i);
+                const matchEnd = line.length;
+                const diagRange = new vscode.Range(pos.line, matchStart >= 0 ? matchStart : 0, pos.line, matchEnd);
+                const todoMsg = (m[1] || m[2] || '').trim() || 'placeholder description';
+                const todoDiag = new vscode.Diagnostic(
+                    diagRange,
+                    `[SVND]: Unresolved placeholder ('${todoMsg}')`,
+                    vscode.DiagnosticSeverity.Information
+                );
+                todoDiag.code = '[SVND]';
+                todoDiag.source = 'sv-nd-scribe';
+                entry.list.push(todoDiag);
+            }
+        }
+
         // Reset diagnostics for all these documents
         for (const doc of documents) {
             diagnosticCollection.set(doc.uri, []);
@@ -715,6 +850,95 @@ function lintFiles(documents) {
         // Apply diagnostics
         for (const { uri, list } of diagnosticsMap.values()) {
             diagnosticCollection.set(uri, list);
+        }
+    });
+}
+
+async function runResolveTodo(targetUri, lineNumber) {
+    let uri = targetUri;
+    if (!uri && vscode.window.activeTextEditor) {
+        uri = vscode.window.activeTextEditor.document.uri;
+    }
+    if (!uri) {
+        vscode.window.showInformationMessage('No active SystemVerilog document to resolve TODO.');
+        return;
+    }
+
+    try {
+        const document = await vscode.workspace.openTextDocument(uri);
+        if (document.isDirty) {
+            await document.save();
+        }
+    } catch (e) {
+        // Document might already be on disk or not loaded
+    }
+
+    const pythonPath = getPythonPath();
+    const scribeHome = getScribeHome(uri);
+    const env = getExecutionEnv(scribeHome);
+
+    const filePath = uri.fsPath;
+    const args = ['-m', 'agent', filePath, '--batch', '--no-backup'];
+    if (lineNumber !== null && lineNumber !== undefined && Number(lineNumber) > 0) {
+        args.push('--resolve-todo', String(lineNumber));
+    } else {
+        args.push('--resolve-todo');
+    }
+
+    const execOptions = { env };
+    if (scribeHome) {
+        execOptions.cwd = scribeHome;
+    }
+
+    if (outputChannel) {
+        outputChannel.appendLine(`[Agent] Resolving TODO: ${pythonPath} ${args.join(' ')}`);
+    }
+
+    child_process.execFile(pythonPath, args, execOptions, async (error, stdout, stderr) => {
+        if (outputChannel) {
+            if (stderr) outputChannel.appendLine(`[Stderr] ${stderr}`);
+            if (stdout) outputChannel.appendLine(`[Stdout] ${stdout}`);
+        }
+
+        if (error && error.code !== 0 && error.code !== 2) {
+            const msg = (stderr && stderr.trim()) || (stdout && stdout.trim()) || error.message;
+            vscode.window.showErrorMessage(`SV Scribe Resolve Error: ${msg}`);
+            return;
+        }
+
+        try {
+            const fileBytes = await vscode.workspace.fs.readFile(uri);
+            const newContent = Buffer.from(fileBytes).toString('utf-8');
+            const doc = await vscode.workspace.openTextDocument(uri);
+            const currentContent = doc.getText();
+            if (currentContent !== newContent) {
+                const edit = new vscode.WorkspaceEdit();
+                const fullRange = new vscode.Range(
+                    doc.positionAt(0),
+                    doc.positionAt(currentContent.length)
+                );
+                edit.replace(uri, fullRange, newContent);
+                await vscode.workspace.applyEdit(edit);
+                try {
+                    if (doc.isDirty) {
+                        await doc.save();
+                    }
+                } catch (saveErr) {
+                    // Safe to ignore: disk already has newContent written atomically
+                }
+                const msg = lineNumber
+                    ? `SV Scribe: Resolved TODO [SVND] at line ${lineNumber}.`
+                    : 'SV Scribe: Resolved TODO [SVND] marker(s).';
+                vscode.window.showInformationMessage(msg);
+            } else {
+                vscode.window.showInformationMessage('SV Scribe: No changes made to TODO [SVND] marker.');
+            }
+            lintDocument(doc);
+        } catch (e) {
+            const targetDoc = vscode.workspace.textDocuments.find(d => d.uri.toString() === uri.toString());
+            if (targetDoc) {
+                lintDocument(targetDoc);
+            }
         }
     });
 }
@@ -841,10 +1065,14 @@ function getExecutionEnv(scribeHome) {
     const env = Object.assign({}, process.env, resolvedUserEnv);
 
     if (scribeHome) {
-        env.SVND_SCRIBE_HOME = scribeHome;
-        const currentPyPath = env.PYTHONPATH || '';
-        const pathSep = process.platform === 'win32' ? ';' : ':';
-        env.PYTHONPATH = currentPyPath ? `${scribeHome}${pathSep}${currentPyPath}` : scribeHome;
+        if (!resolvedUserEnv.SVND_SCRIBE_HOME) {
+            env.SVND_SCRIBE_HOME = scribeHome;
+        }
+        if (!resolvedUserEnv.PYTHONPATH) {
+            const currentPyPath = env.PYTHONPATH || '';
+            const pathSep = process.platform === 'win32' ? ';' : ':';
+            env.PYTHONPATH = currentPyPath ? `${scribeHome}${pathSep}${currentPyPath}` : scribeHome;
+        }
     }
 
     if (projectConfig) {
@@ -872,14 +1100,23 @@ function getExecutionEnv(scribeHome) {
 function getScribeHome(documentUri) {
     const config = vscode.workspace.getConfiguration('sv-nd-scribe');
     const configuredHome = config.get('scribeHome');
-    if (configuredHome) return configuredHome;
+    if (configuredHome) return resolveVscodeVariables(configuredHome);
+    const userEnv = config.get('env') || {};
+    if (userEnv.SVND_SCRIBE_HOME) return resolveVscodeVariables(userEnv.SVND_SCRIBE_HOME);
     if (process.env.SVND_SCRIBE_HOME) return process.env.SVND_SCRIBE_HOME;
+
+    const isScribeDir = (dir) => {
+        if (!dir) return false;
+        return fs.existsSync(path.join(dir, 'agent')) &&
+               fs.existsSync(path.join(dir, 'linter')) &&
+               fs.existsSync(path.join(dir, 'linter', 'core', 'linter_registry.py'));
+    };
 
     // Check starting from document directory upwards
     if (documentUri && documentUri.fsPath) {
         let curr = path.dirname(documentUri.fsPath);
         for (let i = 0; i < 10; i++) {
-            if (fs.existsSync(path.join(curr, 'agent')) && fs.existsSync(path.join(curr, 'linter'))) {
+            if (isScribeDir(curr)) {
                 return curr;
             }
             const parent = path.dirname(curr);
@@ -888,12 +1125,16 @@ function getScribeHome(documentUri) {
         }
     }
 
-    // Check workspace folders
+    // Check workspace folders and sibling folders
     if (vscode.workspace.workspaceFolders) {
         for (const wf of vscode.workspace.workspaceFolders) {
             const root = wf.uri.fsPath;
-            if (fs.existsSync(path.join(root, 'agent')) && fs.existsSync(path.join(root, 'linter'))) {
+            if (isScribeDir(root)) {
                 return root;
+            }
+            const sibling = path.join(root, '..', 'sv-nd-scribe');
+            if (isScribeDir(sibling)) {
+                return sibling;
             }
         }
     }
@@ -901,7 +1142,7 @@ function getScribeHome(documentUri) {
     // Check extension folder parents
     let curr = __dirname;
     for (let i = 0; i < 5; i++) {
-        if (fs.existsSync(path.join(curr, 'agent')) && fs.existsSync(path.join(curr, 'linter'))) {
+        if (isScribeDir(curr)) {
             return curr;
         }
         const parent = path.dirname(curr);

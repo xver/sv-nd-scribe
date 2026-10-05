@@ -8,11 +8,11 @@ The **sv-nd-scribe** toolkit combines:
 
 - **NaturalDocs-based documentation rules**
 - **Static linter** for detecting issues in source files
-- **AI agent** with deterministic and LLM-assisted auto-fixers
+- **AI agent** with deterministic syntax auto-fixers, LLM backends, and `TODO [SVND]:` placeholder resolvers
 - **Workspace setup doctor** that validates prerequisites and automatically repairs missing configurations
 - **Model Context Protocol (MCP) server** for AI assistants/IDEs
-- **Curated knowledge base** of 13 SystemVerilog documentation skills
-- **VS Code extension** for real-time in-editor feedback
+- **Curated knowledge base** of 14 SystemVerilog documentation skills
+- **VS Code extension** for real-time in-editor feedback and Quick Fix actions
 
 **sv-nd-scribe** is available under the MIT License and can be used without restriction in both open-source and commercial applications.
 
@@ -36,10 +36,10 @@ Each core subsystem of **sv-nd-scribe** has its own dedicated documentation:
 |---|---|---|
 | 🔍 **Static Linter** | AST-based static analyzer with `.f` manifest and JSON output support | [**`linter/README.md`**](linter/README.md) |
 | 📋 **Linting Rules** | Full catalog of all 41 Wellknown (WKL) and NaturalDocs (ND) rules | [**`linter/rules/RULES.md`**](linter/rules/RULES.md) |
-| 🤖 **AI Agent & Auto-Fixer** | Deterministic syntax engine, LLM backends, template manager, setup doctor, and Python API | [**`agent/README.md`**](agent/README.md) |
+| 🤖 **AI Agent & Auto-Fixer** | Deterministic syntax engine, `TODO [SVND]:` resolver, comment cleaner, LLM backends, and setup doctor | [**`agent/README.md`**](agent/README.md) |
 | 🔌 **MCP Server** | Model Context Protocol server exposing lint, check, and fix tools to AI IDEs | [**`agent/README.md#model-context-protocol-mcp-server`**](agent/README.md#model-context-protocol-mcp-server) |
-| 📚 **Skills Knowledge Base** | 13 reference guides, keyword tables, and troubleshooting skills | [**`skills/README.md`**](skills/README.md) |
-| 💻 **VS Code Extension** | Real-time diagnostics, Lightbulb (`Ctrl+.`) Quick-Fixes, 7-step verification, and auto-fix | [**`vscode/README.md`**](vscode/README.md) · [⚡ **Quick Start**](vscode/README.md#getting-started-3-steps) |
+| 📚 **Skills Knowledge Base** | 14 reference guides, technical documentation standards, and troubleshooting skills | [**`skills/README.md`**](skills/README.md) |
+| 💻 **VS Code Extension** | Real-time diagnostics, Lightbulb (`Ctrl+.`) Quick-Fixes, TODO resolvers, and auto-fix | [**`vscode/README.md`**](vscode/README.md) · [⚡ **Quick Start**](vscode/README.md#getting-started-3-steps) |
 
 ---
 
@@ -108,7 +108,7 @@ python3 -m agent --doctor
 #### Option B: VS Code Extension Verification
 1. Install the packaged extension:
    ```bash
-   code --install-extension vscode/sv-nd-scribe-vscode-0.1.5.vsix
+   code --install-extension vscode/sv-nd-scribe-vscode-0.1.8.vsix
    ```
 2. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and run:  
    **`SV_Scribe: Verify linter installation`**
@@ -182,6 +182,15 @@ python3 -m agent --llm none --batch --no-backup -f makedir/template_sv.f
 # Dry-run preview: display proposed diffs without writing to disk
 python3 -m agent --dry-run tests/test_bad_sv/nd_driver.sv
 
+# Resolve a specific TODO [SVND]: marker near a line number (e.g. line 42)
+python3 -m agent --resolve-todo 42 src/my_module.sv
+
+# Resolve all TODO [SVND]: and placeholder markers across a file
+python3 -m agent --resolve-todo src/my_module.sv
+
+# Remove redundant and nested comment markers (e.g. // /* or // //)
+python3 -m agent --clean-comments src/my_module.sv
+
 # Re-apply corporate header template
 python3 -m agent --overwrite-header src/my_module.sv
 ```
@@ -216,13 +225,13 @@ Connect `sv-nd-scribe` tools directly to AI assistants and IDEs (Antigravity, Cu
 
 ### 5. NaturalDocs Skills Knowledge Base
 
-A library of 13 modular skills defining syntactic standards, comment structures, and setup diagnostics:
+A library of 14 modular skills defining syntactic standards, comment structures, and setup diagnostics:
 
 * **Setup & Environment**: [`setup_troubleshooter`](skills/setup_troubleshooter/SKILL.md)
 * **File & Containers**: [`file_header`](skills/file_header/SKILL.md), [`sv_constructs`](skills/sv_constructs/SKILL.md), [`group_heading`](skills/group_heading/SKILL.md)
 * **Methods & Logic**: [`function_task`](skills/function_task/SKILL.md), [`process_assign`](skills/process_assign/SKILL.md), [`assertion_property`](skills/assertion_property/SKILL.md)
 * **Data & Types**: [`type_doc`](skills/type_doc/SKILL.md), [`variable_doc`](skills/variable_doc/SKILL.md), [`inline_doc`](skills/inline_doc/SKILL.md), [`coverage_doc`](skills/coverage_doc/SKILL.md)
-* **Conventions & Priority**: [`nd_comment`](skills/nd_comment/SKILL.md), [`triage`](skills/triage/SKILL.md)
+* **Conventions & Quality**: [`nd_comment`](skills/nd_comment/SKILL.md), [`sv-technical-doc`](skills/sv-technical-doc/SKILL.md), [`triage`](skills/triage/SKILL.md)
 
 👉 **Full skills catalog & keyword tables**: [**`skills/README.md`**](skills/README.md)
 
@@ -230,11 +239,11 @@ A library of 13 modular skills defining syntactic standards, comment structures,
 
 ### 6. VS Code Extension
 
-Install the packaged extension for in-editor linting, Lightbulb (`Ctrl+.`) Quick-Fix actions, interactive 7-step setup verification, and header template management:
+Install the packaged extension (v0.1.8) for in-editor linting, Lightbulb (`Ctrl+.`) Quick-Fix actions, interactive `TODO [SVND]:` marker resolution, redundant comment cleaning, 7-step setup verification, and header template management:
 
 ```bash
 # Install the extension
-code --install-extension vscode/sv-nd-scribe-vscode-0.1.5.vsix
+code --install-extension vscode/sv-nd-scribe-vscode-0.1.8.vsix
 
 # Configure workspace environment: .vscode/settings.json, .env, shell env variables
 cd makedir && make setup_workspace

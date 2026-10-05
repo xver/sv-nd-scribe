@@ -28,9 +28,11 @@ class ClockingDocumentationRule(BaseRule):
         violations = []
 
         # AST node driven check
-        nodes = self._find_tree_nodes_by_tag(context, "kClockingDeclaration")
-        if nodes:
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            nodes = self._find_tree_nodes_by_tag(context, "kClockingDeclaration")
             for node in nodes:
+                line = self._node_start_line(node, file_content, context)
                 text = getattr(node, 'text', '') or ""
                 m = re.search(r'\bclocking\s+([a-zA-Z_][a-zA-Z0-9_]*)', text)
                 if not m:
@@ -41,7 +43,6 @@ class ClockingDocumentationRule(BaseRule):
                     name = m_line.group(1) if m_line else "cb"
                 else:
                     name = m.group(1)
-                line = self._node_start_line(node, file_content, context)
                 comments = self._comments_before_node(node, file_content, context)
                 if not comments:
                     violations.append(

@@ -15,8 +15,8 @@ Style and formatting rules that apply to all SystemVerilog files.
 
 | Rule ID  | Severity    | Description |
 |----------|-------------|-------------|
-| WKL-001  | ERROR       | Class member variables must have a `m_` prefix. |
-| WKL-002  | ERROR       | Typedef declarations must end with the `_t` suffix. |
+| WKL-001  | ERROR       | Class member variables must have a `m_` prefix (sequence classes with suffix `_seq`/`_vseq` and `_sqr`/`_seq`/`_port`/`_export`/`_vif` handles are exempt). |
+| WKL-002  | ERROR       | Typedef declarations must end with the `_t` suffix, and enum typedefs with `_e`, `_enum_t`, or `_t`. |
 | WKL-003  | ERROR       | Macro names must be in `UPPER_SNAKE_CASE`. |
 | WKL-004  | ERROR       | Interface names must end with the `_if` suffix. |
 | WKL-005  | **WARNING** | File must end with exactly one empty line (no missing or multiple trailing newlines). |

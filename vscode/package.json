@@ -2,7 +2,7 @@
   "name": "sv-nd-scribe-vscode",
   "displayName": "SV ND Scribe",
   "description": "SV ND Scribe: Real-time NaturalDocs documentation and formatting feedback for SystemVerilog",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "icon": "scribe_logo.png",
   "publisher": "ic-verimeter",
   "engines": {
@@ -61,6 +61,18 @@
       {
         "command": "sv-nd-scribe.openSettingsJson",
         "title": "SV_Scribe: Open Settings (.vscode/settings.json)"
+      },
+      {
+        "command": "sv-nd-scribe.resolveTodo",
+        "title": "SV_Scribe: Resolve TODO [SVND] with Agent"
+      },
+      {
+        "command": "sv-nd-scribe.resolveAllTodos",
+        "title": "SV_Scribe: Resolve all TODO [SVND] markers in file"
+      },
+      {
+        "command": "sv-nd-scribe.cleanNestedComments",
+        "title": "SV_Scribe: Remove Redundant / Nested Comment Markers"
       }
     ],
     "configuration": {

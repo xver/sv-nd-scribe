@@ -34,11 +34,10 @@ class FunctionTaskDocumentationRule(BaseRule):
             "kClassConstructorDeclaration", "kClassConstructorPrototype",
             "kMethodDeclaration", "kMethodPrototype",
         ]
-        has_ast = False
-        for tag in fn_tags:
-            nodes = self._find_tree_nodes_by_tag(context, tag)
-            if nodes:
-                has_ast = True
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            for tag in fn_tags:
+                nodes = self._find_tree_nodes_by_tag(context, tag)
                 for node in nodes:
                     text = getattr(node, 'text', '') or ""
                     # Skip out-of-class extern method implementations (e.g. Class::method)
@@ -85,7 +84,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                                     self.create_violation(
                                         file_path=file_path,
                                         line=line,
-                                        message=f"Function/Task '{name}' has parameters but is missing a 'Parameters:' section."
+                                        message=f"{kind.capitalize()} '{name}' has parameters but is missing a 'Parameters:' section."
                                     )
                                 )
                             elif "Parameters:" in comment_text or "Returns:" in comment_text:
@@ -97,7 +96,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                                                 self.create_violation(
                                                     file_path=file_path,
                                                     line=line,
-                                                    message=f"Function/Task '{name}' has improper parameters section formatting."
+                                                    message=f"{kind.capitalize()} '{name}' has improper parameters section formatting."
                                                 )
                                             )
                                             break
@@ -107,7 +106,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                                                 self.create_violation(
                                                     file_path=file_path,
                                                     line=line,
-                                                    message=f"Function/Task '{name}' has improper returns section formatting."
+                                                    message=f"{kind.capitalize()} '{name}' has improper returns section formatting."
                                                 )
                                             )
                                             break
@@ -148,7 +147,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                             self.create_violation(
                                 file_path=file_path,
                                 line=i + 1,
-                                message=f"Function/Task '{func_name}' has parameters but is missing a 'Parameters:' section."
+                                message=f"{kind.capitalize()} '{func_name}' has parameters but is missing a 'Parameters:' section."
                             )
                         )
                     elif "Parameters:" in comment_text or "Returns:" in comment_text:
@@ -160,7 +159,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                                         self.create_violation(
                                             file_path=file_path,
                                             line=i + 1,
-                                            message=f"Function/Task '{func_name}' has improper parameters section formatting."
+                                            message=f"{kind.capitalize()} '{func_name}' has improper parameters section formatting."
                                         )
                                     )
                                     break
@@ -170,7 +169,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                                         self.create_violation(
                                             file_path=file_path,
                                             line=i + 1,
-                                            message=f"Function/Task '{func_name}' has improper returns section formatting."
+                                            message=f"{kind.capitalize()} '{func_name}' has improper returns section formatting."
                                         )
                                     )
                                     break

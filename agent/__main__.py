@@ -54,6 +54,8 @@ def main():
     parser.add_argument("--open-header-template", action="store_true", help="Print path and content of active header_template.txt")
     parser.add_argument("--reset-header-template", action="store_true", help="Reset active header_template.txt to built-in default")
     parser.add_argument("--overwrite-header", action="store_true", help="Force overwrite file header from template")
+    parser.add_argument("--clean-comments", action="store_true", help="Remove redundant and nested comment markers from comments in files")
+    parser.add_argument("--resolve-todo", type=int, nargs="?", const=-1, help="Attempt to resolve TODO [SVND]: placeholder at specified line number (or all in file)")
 
     args = parser.parse_args()
 
@@ -102,6 +104,27 @@ def main():
         exit_code = agent.run(files=[], status_check=True, llm_provider=args.llm)
         sys.exit(exit_code)
 
+    if args.resolve_todo is not None:
+        if not args.files:
+            parser.error("--resolve-todo requires a target file.")
+        line_num = args.resolve_todo if args.resolve_todo > 0 else None
+        res = agent.resolve_todo(
+            filepath=args.files[0],
+            target_line=line_num,
+            llm_provider=args.llm,
+            no_backup=args.no_backup,
+            dry_run=args.dry_run,
+        )
+        if args.json:
+            print(json.dumps(res, indent=2))
+        else:
+            if res.get("status") == "success":
+                for c in res.get("changes", []):
+                    print(f"[agent] Resolved TODO [SVND] at line {c['line']}: '{c['description']}'")
+            else:
+                print(f"[agent] {res.get('message', 'No changes made.')}")
+        sys.exit(0 if res.get("status") in ("success", "clean") else 1)
+
     files_to_fix = []
     if args.file_list:
         files_to_fix.extend(parse_manifest_file(args.file_list))
@@ -110,6 +133,26 @@ def main():
 
     if not files_to_fix:
         parser.error("No input files specified. Provide files as positional arguments, use -f/--file-list, or run --doctor / --fix-setup.")
+
+    if args.clean_comments:
+        from agent.fixer.file_fixer import FileFixer
+        file_fixer = FileFixer(no_backup=args.no_backup)
+        total_cleaned = 0
+        for fp in files_to_fix:
+            if not os.path.exists(fp):
+                continue
+            lines = file_fixer.read_file_lines(fp)
+            mod_lines, changes = file_fixer.clean_nested_comments_in_memory(lines)
+            if changes > 0:
+                total_cleaned += changes
+                if not args.dry_run:
+                    file_fixer.handle_backup(fp)
+                    file_fixer.write_file_atomic(fp, mod_lines)
+                print(f"[agent] Cleaned {changes} nested/redundant comment marker(s) in {fp}")
+            else:
+                print(f"[agent] No nested/redundant comment markers found in {fp}")
+        if not args.rules:
+            sys.exit(0)
 
     rules_filter = None
     if args.rules:

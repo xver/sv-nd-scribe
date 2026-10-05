@@ -37,6 +37,16 @@ class ClassMemberPrefixRule(BaseRule):
             curr = getattr(curr, 'parent', None)
         return False
 
+    def _is_sequence_class(self, class_node: Any, class_name: str) -> bool:
+        """Sequence classes (suffix _seq, _vseq, _sequence or extending a sequence) do not require m_ prefix."""
+        if class_name:
+            if class_name.endswith(('_seq', '_vseq', '_sequence')) or re.search(r'_(?:v?seq|sequence)(?:_base)?$', class_name, re.IGNORECASE):
+                return True
+        node_text = getattr(class_node, 'text', '') or ""
+        if re.search(r'\bextends\s+.*(?:seq|sequence)\b', node_text, re.IGNORECASE):
+            return True
+        return False
+
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
         EXCEPTIONS = {'is_active', 'coverage_enable', 'checks_enable', 'regmodel'}
@@ -47,6 +57,24 @@ class ClassMemberPrefixRule(BaseRule):
             return []
 
         for class_node in class_nodes:
+            class_name = ""
+            if hasattr(class_node, 'find_all'):
+                try:
+                    id_nodes = list(class_node.find_all(lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'))
+                    if id_nodes:
+                        class_name = id_nodes[0].text
+                except Exception:
+                    pass
+            if not class_name:
+                text = getattr(class_node, 'text', '') or ""
+                m = re.search(r"\bclass\s+([a-zA-Z_][a-zA-Z0-9_]*)", text)
+                if m:
+                    class_name = m.group(1)
+
+            # Sequence classes (suffix _seq, _vseq, etc.) do not require m_ prefix
+            if self._is_sequence_class(class_node, class_name):
+                continue
+
             data_nodes = []
             if hasattr(class_node, 'find_all'):
                 try:
@@ -112,6 +140,6 @@ class ClassMemberPrefixRule(BaseRule):
             return False
         if var_name.startswith("m_") or var_name.startswith("is_"):
             return False
-        if var_name.endswith('_port') or var_name.endswith('_export') or var_name == 'vif' or var_name.endswith('_vif'):
+        if var_name.endswith(('_port', '_export', '_vif', '_seq', '_vseq', '_sqr')) or var_name == 'vif':
             return False
         return True

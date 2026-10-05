@@ -25,6 +25,55 @@ class MacroDocumentationRule(BaseRule):
 
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
+
+        file_guard = file_path.replace("\\", "/").split("/")[-1].replace(".", "_").upper()
+        if not file_guard.endswith("_SV") and not file_guard.endswith("_SVH"):
+            file_guard += "_SV"
+        file_guard_alt = file_path.replace("\\", "/").split("/")[-1].replace(".", "_").upper()
+
+        # AST node driven check
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            nodes = self._find_tree_nodes_by_tag(context, "kPreprocessorDefine")
+            for node in nodes:
+                text = (getattr(node, 'text', '') or "").strip()
+                macro_name = ""
+                if hasattr(node, 'find_all'):
+                    try:
+                        id_nodes = list(node.find_all(lambda n: getattr(n, 'tag', '') == 'PP_Identifier'))
+                        if id_nodes:
+                            macro_name = id_nodes[0].text.strip()
+                    except Exception:
+                        pass
+                if not macro_name:
+                    m = re.search(r"^`define\s+([a-zA-Z_][a-zA-Z0-9_]*)", text)
+                    if m:
+                        macro_name = m.group(1)
+
+                if not macro_name:
+                    continue
+
+                if macro_name.upper() in (file_guard, file_guard_alt):
+                    continue
+
+                line = self._node_start_line(node, file_content, context)
+                # Check if preceded by `ifndef
+                lines = file_content.splitlines()
+                if line > 1 and lines[line - 2].strip().startswith("`ifndef"):
+                    continue
+
+                comments = self._comments_before_node(node, file_content, context)
+                if not comments or not any("define" in c.lower() for c in comments):
+                    violations.append(
+                        self.create_violation(
+                            file_path=file_path,
+                            line=line,
+                            message=f"Macro `{macro_name}` is missing NaturalDocs documentation ('// define: {macro_name}')."
+                        )
+                    )
+            return violations
+
+        # Fallback text parsing
         clean_content = self._mask_comments_and_strings(file_content)
         clean_lines = clean_content.splitlines()
         lines = file_content.splitlines()
@@ -45,10 +94,7 @@ class MacroDocumentationRule(BaseRule):
                     continue
                 if i > 0 and lines[i-1].strip().startswith("`ifndef"):
                     continue
-                file_guard = file_path.replace("\\", "/").split("/")[-1].replace(".", "_").upper()
-                if not file_guard.endswith("_SV") and not file_guard.endswith("_SVH"):
-                    file_guard += "_SV"
-                if macro_name.upper() == file_guard or macro_name.upper() == file_path.replace("\\", "/").split("/")[-1].replace(".", "_").upper():
+                if macro_name.upper() == file_guard or macro_name.upper() == file_guard_alt:
                     continue
                 
                 # Check preceding comments

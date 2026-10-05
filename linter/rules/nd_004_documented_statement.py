@@ -31,11 +31,10 @@ class DocumentedStatementRule(BaseRule):
             "kFunctionDeclaration", "kTaskDeclaration", "kFunctionPrototype", "kTaskPrototype",
             "kClassConstructorDeclaration", "kClassConstructorPrototype"
         ]
-        has_ast = False
-        for tag in tags:
-            nodes = self._find_tree_nodes_by_tag(context, tag)
-            if nodes:
-                has_ast = True
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            for tag in tags:
+                nodes = self._find_tree_nodes_by_tag(context, tag)
                 for node in nodes:
                     text = getattr(node, 'text', '') or ""
                     first_l = text.splitlines()[0].strip() if text else tag
@@ -52,7 +51,6 @@ class DocumentedStatementRule(BaseRule):
                                 message=f"Documented statement '{first_l}' is missing a preceding NaturalDocs comment block."
                             )
                         )
-        if has_ast:
             return violations
 
         # Fallback text parsing

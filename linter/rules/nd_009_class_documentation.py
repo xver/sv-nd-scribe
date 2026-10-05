@@ -27,8 +27,9 @@ class ClassDocumentationRule(BaseRule):
         violations = []
 
         # AST node driven check
-        nodes = self._find_tree_nodes_by_tag(context, "kClassDeclaration")
-        if nodes:
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            nodes = self._find_tree_nodes_by_tag(context, "kClassDeclaration")
             for node in nodes:
                 class_name = ""
                 if hasattr(node, 'find_all'):

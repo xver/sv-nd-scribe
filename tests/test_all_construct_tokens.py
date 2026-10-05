@@ -66,8 +66,9 @@ class TestAllFixerTokens(unittest.TestCase):
         p = fixer.propose(v, lines)
         self.assertIsNotNone(p)
         self.assertIn("// Function: new\n", p.patch_lines[0])
-        self.assertIn("name - Description for name", p.patch_lines[0])
-        self.assertIn("parent - Description for parent", p.patch_lines[0])
+        self.assertIn("name - Instance name for UVM factory registration and hierarchy.", p.patch_lines[0])
+        self.assertIn("parent - Parent component in the UVM verification hierarchy.", p.patch_lines[0])
+        self.assertNotIn("Description for", p.patch_lines[0])
         self.assertNotIn("nd_monitor", p.patch_lines[0])
         self.assertNotIn("null", p.patch_lines[0])
 
@@ -85,9 +86,10 @@ class TestAllFixerTokens(unittest.TestCase):
         self.assertIsNotNone(p)
         self.assertIn("// Class: nd_param_driver\n", p.patch_lines[0])
         self.assertIn("Parameters:\n", p.patch_lines[0])
-        self.assertIn("REQ_T - Description for REQ_T", p.patch_lines[0])
-        self.assertIn("RSP_T - Description for RSP_T", p.patch_lines[0])
-        self.assertIn("DATA_WIDTH - Description for DATA_WIDTH", p.patch_lines[0])
+        self.assertIn("REQ_T - Type parameter specifying request sequence item type.", p.patch_lines[0])
+        self.assertIn("RSP_T - Type parameter specifying response sequence item type.", p.patch_lines[0])
+        self.assertIn("DATA_WIDTH - Bus or payload data width in bits.", p.patch_lines[0])
+        self.assertNotIn("Description for", p.patch_lines[0])
 
     def test_fix_nd013_interface_params_and_ports(self):
         fixer = FixNd013()
@@ -105,10 +107,11 @@ class TestAllFixerTokens(unittest.TestCase):
         self.assertIsNotNone(p)
         self.assertIn("// Interface: nd_bus_interface\n", p.patch_lines[0])
         self.assertIn("Parameters:\n", p.patch_lines[0])
-        self.assertIn("ADDR_WIDTH - Description for ADDR_WIDTH", p.patch_lines[0])
+        self.assertIn("ADDR_WIDTH - Bus address width in bits.", p.patch_lines[0])
         self.assertIn("Ports:\n", p.patch_lines[0])
-        self.assertIn("clk - Description for clk", p.patch_lines[0])
-        self.assertIn("rst_n - Description for rst_n", p.patch_lines[0])
+        self.assertIn("clk - Primary clock signal.", p.patch_lines[0])
+        self.assertIn("rst_n - Active-low asynchronous reset.", p.patch_lines[0])
+        self.assertNotIn("Description for", p.patch_lines[0])
 
     def test_fix_nd014_module_params_and_ports(self):
         fixer = FixNd014()
@@ -125,10 +128,11 @@ class TestAllFixerTokens(unittest.TestCase):
         self.assertIsNotNone(p)
         self.assertIn("// Module: nd_alu\n", p.patch_lines[0])
         self.assertIn("Parameters:\n", p.patch_lines[0])
-        self.assertIn("DATA_WIDTH - Description for DATA_WIDTH", p.patch_lines[0])
+        self.assertIn("DATA_WIDTH - Bus or payload data width in bits.", p.patch_lines[0])
         self.assertIn("Ports:\n", p.patch_lines[0])
-        self.assertIn("clk - Description for clk", p.patch_lines[0])
-        self.assertIn("result - Description for result", p.patch_lines[0])
+        self.assertIn("clk - Primary clock signal.", p.patch_lines[0])
+        self.assertIn("result - Computed operation result.", p.patch_lines[0])
+        self.assertNotIn("Description for", p.patch_lines[0])
 
     def test_fix_nd004_various_constructs(self):
         fixer = FixNd004()

@@ -62,6 +62,8 @@ nd_config m_config;
 
 ## Description Quality Guidelines
 
+- **Anti-Placeholder Rule**: Placeholders such as `Description for <item>`, `Description of <item>`, or `TODO` are **strictly unacceptable**.
+- Descriptions must be **true, meaningful descriptions** derived from file analysis, port directions, variable types, UVM conventions, and domain knowledge.
 - Describe **what** the variable represents, not just its type.
 - For parameters: mention units (cycles, bytes, bits) and valid ranges.
 - For analysis ports: say where transactions are sent.

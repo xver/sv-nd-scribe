@@ -25,8 +25,28 @@ class EnumDocumentationRule(BaseRule):
 
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
+
+        # AST node driven check
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            type_nodes = self._find_tree_nodes_by_tag(context, "kTypeDeclaration")
+            for node in type_nodes:
+                text = getattr(node, 'text', '') or ""
+                if "enum" in text:
+                    comments = self._comments_before_node(node, file_content, context)
+                    if not comments or not any("enum" in c.lower() for c in comments):
+                        line = self._node_start_line(node, file_content, context)
+                        violations.append(
+                            self.create_violation(
+                                file_path=file_path,
+                                line=line,
+                                message="Enum typedef is missing preceding NaturalDocs documentation ('// enum: <name>')."
+                            )
+                        )
+            return violations
+
+        # Fallback text parsing
         lines = file_content.splitlines()
-        
         for i, line in enumerate(lines):
             if "enum" in line and "typedef" in line:
                 comments = self._extract_comments_from_text(file_content, i + 1)

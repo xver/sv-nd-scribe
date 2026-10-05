@@ -27,11 +27,11 @@ class InlineDocumentationRule(BaseRule):
         violations = []
 
         # AST node driven check for enum items and struct/union members
-        enum_item_nodes = self._find_tree_nodes_by_tag(context, "kEnumMemberControl")
-        struct_member_nodes = self._find_tree_nodes_by_tag(context, "kStructUnionMember")
-        member_nodes = enum_item_nodes + struct_member_nodes
-
-        if member_nodes:
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            enum_item_nodes = self._find_tree_nodes_by_tag(context, "kEnumMemberControl")
+            struct_member_nodes = self._find_tree_nodes_by_tag(context, "kStructUnionMember")
+            member_nodes = enum_item_nodes + struct_member_nodes
             lines = file_content.splitlines()
             has_rawtokens = context and hasattr(context, 'rawtokens') and context.rawtokens
             for node in member_nodes:

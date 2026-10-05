@@ -1,5 +1,5 @@
 rule_id: "WKL-001"
-description: "Class member variable name prefix m_"
+description: "Class member variable name prefix m_ (exempts sequence classes with suffix _seq/_vseq and _sqr/_seq handles)"
 fixer_class: "agent.fixer.rules.fix_wkl001_class_member_prefix.FixWkl001"
 skill: "triage"
 safety: unsafe

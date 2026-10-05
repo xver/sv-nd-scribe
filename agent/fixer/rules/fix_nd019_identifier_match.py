@@ -35,21 +35,26 @@ class FixNd019(BaseFixer):
             curr -= 1
 
         end_idx = curr
-        while curr >= 0:
+        in_block_comment = False
+        lines_scanned = 0
+        while curr >= 0 and lines_scanned < 200:
+            lines_scanned += 1
             l_str = source_lines[curr].strip()
-            if l_str.startswith("//") or l_str.startswith("/*") or l_str.startswith("*") or l_str.endswith("*/"):
+            if in_block_comment:
+                if "/*" in l_str:
+                    in_block_comment = False
                 curr -= 1
             else:
-                break
+                if l_str.endswith("*/") and "/*" not in l_str:
+                    in_block_comment = True
+                    curr -= 1
+                elif l_str.startswith("/*") and l_str.endswith("*/"):
+                    curr -= 1
+                elif l_str.startswith("//") or l_str.startswith("*"):
+                    curr -= 1
+                else:
+                    break
         start_idx = curr + 1
-
-        # If no preceding comments, check if line_idx itself contains doc_name in a comment (e.g. inline comment)
-        if start_idx > end_idx or end_idx < 0:
-            if "//" in source_lines[line_idx] and doc_name in source_lines[line_idx].split("//", 1)[1]:
-                start_idx = line_idx
-                end_idx = line_idx
-            else:
-                return None
 
         # Collect lines in comment block that contain doc_name
         affected_indices = [
@@ -58,7 +63,13 @@ class FixNd019(BaseFixer):
         ]
 
         if not affected_indices:
-            return None
+            # If no preceding comments match, check if line_idx itself contains doc_name in an inline comment
+            line_str = source_lines[line_idx]
+            if ("//" in line_str and doc_name in line_str.split("//", 1)[1]) or \
+               ("/*" in line_str and doc_name in line_str):
+                affected_indices = [line_idx]
+            else:
+                return None
 
         patch_start = min(affected_indices)
         patch_end = max(affected_indices)
@@ -66,10 +77,35 @@ class FixNd019(BaseFixer):
         patch_lines = []
         for i in range(patch_start, patch_end + 1):
             orig = source_lines[i]
-            # Replace occurrences of doc_name with code_name in comments
-            updated = re.sub(r'\b' + re.escape(doc_name) + r'\b', code_name, orig)
-            if updated == orig and doc_name in orig:
-                updated = orig.replace(doc_name, code_name)
+            if i == line_idx:
+                if "//" in orig:
+                    code_part, comment_part = orig.split("//", 1)
+                    updated_comment = re.sub(r'\b' + re.escape(doc_name) + r'\b', code_name, comment_part)
+                    if updated_comment == comment_part and doc_name in comment_part:
+                        updated_comment = comment_part.replace(doc_name, code_name)
+                    updated = code_part + "//" + updated_comment
+                elif "/*" in orig and "*/" in orig:
+                    before_c, rest = orig.split("/*", 1)
+                    comment_part, after_c = rest.split("*/", 1)
+                    updated_comment = re.sub(r'\b' + re.escape(doc_name) + r'\b', code_name, comment_part)
+                    if updated_comment == comment_part and doc_name in comment_part:
+                        updated_comment = comment_part.replace(doc_name, code_name)
+                    updated = before_c + "/*" + updated_comment + "*/" + after_c
+                else:
+                    updated = re.sub(r'\b' + re.escape(doc_name) + r'\b', code_name, orig)
+                    if updated == orig and doc_name in orig:
+                        updated = orig.replace(doc_name, code_name)
+            else:
+                # If this is a NaturalDocs keyword line, cleanly replace the documented identifier
+                kw_m = re.match(r'^(\s*(?://|\*|\/\*)?\s*(?:Class|Function|Task|Interface|Module|Package|Define|Macro|Enum|Type|Typedef|Struct|Union|Variable|Port|Signal|Field|Modport|Clocking|Constraint|Property|Sequence|Checker|Covergroup|Coverpoint|Process|Assign)\s*:\s*)(\S+)(.*)$', orig, re.I)
+                if kw_m:
+                    prefix = kw_m.group(1)
+                    suffix = kw_m.group(3)
+                    updated = f"{prefix}{code_name}{suffix}"
+                else:
+                    updated = re.sub(r'\b' + re.escape(doc_name) + r'\b', code_name, orig)
+                    if updated == orig and doc_name in orig:
+                        updated = orig.replace(doc_name, code_name)
             if not updated.endswith("\n"):
                 updated += "\n"
             patch_lines.append(updated)

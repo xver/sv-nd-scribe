@@ -12,6 +12,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from linter.core.config_manager import ConfigManager
 from agent.fixer.base_fixer import BaseFixer, FixProposal, LinterError
 from agent.fixer.file_fixer import FileFixer
+from agent.fixer.todo_resolver import TodoResolver
 from agent.llm.llm_registry import get_provider
 
 class ScribeAgent:
@@ -508,3 +509,23 @@ class ScribeAgent:
         with open(template_path, "w", encoding="utf-8") as f:
             f.write(default_content)
         return template_path
+
+    def resolve_todo(
+        self,
+        filepath: str,
+        target_line: Optional[int] = None,
+        llm_provider: str = "none",
+        no_backup: bool = False,
+        dry_run: bool = False,
+    ) -> Dict[str, Any]:
+        """Resolve 'TODO [SVND]:' placeholders in filepath."""
+        provider = get_provider(llm_provider, self.agent_config)
+        resolver = TodoResolver(provider=provider, agent_config=self.agent_config)
+        backup_strategy = self.agent_config.get("backup", "auto")
+        return resolver.resolve_file(
+            filepath=filepath,
+            target_line=target_line,
+            backup_strategy=backup_strategy,
+            no_backup=no_backup,
+            dry_run=dry_run,
+        )

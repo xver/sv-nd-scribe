@@ -75,15 +75,37 @@ Rules:
 - Keyword: `// assign: <signal_name>` — use the left-hand side signal name.
 - Description: explain what drives the signal and the logic being expressed.
 
-## Description Quality Guidelines
+## Description Quality Guidelines & Anti-Boilerplate Rules
 
-For processes, describe:
-- **What** the process does (registers values, generates clock, monitors signals).
-- **Trigger**: clock edge, sensitivity list, reset condition.
+Generic placeholders and common-sense restatements such as:
+- `SystemVerilog element definition for <name>.`
+- `SystemVerilog assignment definition for <target>.`
+- `SystemVerilog process definition for <name>.`
+- `Initial process executing startup initialization and configuration setup.`
+- `TODO [SVND]: Add description for ...`
 
-For assigns, describe:
-- The **logic** being expressed in plain English.
-- The **purpose** of the signal in the design context.
+are **STRICTLY PROHIBITED**.
+
+For continuous assignments (`assign`):
+- **Identifier**: Use the full hierarchical target signal name (e.g., `tb_if.m_abs_agent1_if.ready`), NEVER just the root interface instance (`tb_if`).
+- **Handshake Tie-Offs (`ready = 1'b1`, `valid = 1'b1`)**: Explain whether the interface acts as an always-ready responder or active driver.
+- **Signal Mirroring / Forwarding (`data = last_data_o`)**: Explain what captured data is mirrored and which downstream components/monitors observe it.
+- **Expressions & Multiplexing**: State the arbitration condition or combinational logic being evaluated.
+
+For procedural processes (`initial`, `always_ff`, `always_comb`):
+- **Testbench Actions**: Detail configuration retrieval (`tb_template_sys_get_m_config`), virtual interface binding (`set_vif`), or watchdog setup.
+- **RTL State & Triggers**: Describe register transfer logic, clock edge sensitivity, reset conditions, and transaction flow.
+
+## Line Length Constraint (< 80 Characters)
+
+- **Strict 80-Character Limit**: Every line of the comment block must stay strictly below 80 characters (maximum 78 characters per line).
+- **Wrap Descriptions**: Break multi-line descriptions at natural word boundaries across indented lines:
+  ```systemverilog
+  // assign: tb_if.m_abs_agent1_if.ready
+  //   Ties the ABS_AGENT1 ready handshake signal permanently high,
+  //   indicating responder is always ready to receive transactions.
+  assign tb_if.m_abs_agent1_if.ready = 1'b1;
+  ```
 
 ## User Prompt Template
 

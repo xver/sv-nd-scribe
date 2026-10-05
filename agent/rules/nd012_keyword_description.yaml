@@ -1,6 +1,8 @@
 rule_id: "ND-012"
-description: "Description line after bare keyword"
+description: "Description line after bare keyword (placeholders like 'Description for <item>' not acceptable)"
 fixer_class: "agent.fixer.rules.fix_nd012_keyword_desc.FixNd012"
 skill: "variable_doc"
 safety: safe
 batch_eligible: true
+validation:
+  disallow_placeholders: true

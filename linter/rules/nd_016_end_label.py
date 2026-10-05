@@ -32,11 +32,10 @@ class EndLabelRule(BaseRule):
             "kCovergroupDeclaration", "kCheckerDeclaration", "kProgramDeclaration",
             "kPropertyDeclaration"
         ]
-        has_ast = False
-        for tag in tags:
-            nodes = self._find_tree_nodes_by_tag(context, tag)
-            if nodes:
-                has_ast = True
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            for tag in tags:
+                nodes = self._find_tree_nodes_by_tag(context, tag)
                 for node in nodes:
                     text = getattr(node, 'text', '') or ""
                     match = re.search(r"\b(endclass|endfunction|endtask|endpackage|endmodule|endinterface|endgroup|endchecker|endprogram|endproperty)\b(\s*:[^\n;]+)?", text)
@@ -55,7 +54,6 @@ class EndLabelRule(BaseRule):
                                     message=f"Missing labeled end statement for '{kw}'. Expected '{kw} : <name>'."
                                 )
                             )
-        if has_ast:
             return violations
 
         # Fallback text parsing

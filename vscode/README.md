@@ -152,6 +152,9 @@ python3 -m agent --fix-setup
 - **Interactive Quick Fixes (`Ctrl+.` / `Cmd+.` / 💡)**:
   - **Single Rule Fix**: Instant fix for the specific diagnostic at your cursor.
   - **Batch Auto-Fix**: Automatically fix all safe issues across the current file in one click (`SV_Scribe: Fix all auto-fixable issues in file`).
+  - **TODO [SVND] Resolution**: Instant resolution of placeholder comments at cursor with context-aware descriptions.
+- **TODO [SVND]: Placeholder & Marker Resolution**: Detects `TODO [SVND]:` and placeholder comments, replacing them with accurate hardware/UVM descriptions, specific process names, and hierarchical continuous assignment targets.
+- **Nested Comment Cleaner**: One-click cleanup of nested and redundant comment delimiters (`// /*`, `/* //`, `// //`).
 - **File Header Template Management**:
   - **Overwrite Header**: Replace/re-apply the standard corporate file header from template directly from the Quick Fix lightbulb or Command Palette.
   - **Open Template**: Directly open and edit `header_template.txt` in the editor.
@@ -187,6 +190,9 @@ Access these commands via the VS Code Command Palette (`Ctrl+Shift+P`):
 |---|---|---|
 | `sv-nd-scribe.fix` | **`SV_Scribe: Fix all auto-fixable issues in file`** | Run batch auto-fixer on the active document. |
 | `sv-nd-scribe.fixRule` | **`SV_Scribe: Fix specific rule in file`** | Fix a specific rule violation in the active document. |
+| `sv-nd-scribe.resolveTodo` | **`SV_Scribe: Resolve TODO [SVND] with Agent`** | Resolve the `TODO [SVND]:` or placeholder marker at current cursor line. |
+| `sv-nd-scribe.resolveAllTodos` | **`SV_Scribe: Resolve all TODO [SVND] markers in file`** | Resolve all `TODO [SVND]:` and placeholder markers across the active document. |
+| `sv-nd-scribe.cleanNestedComments` | **`SV_Scribe: Remove Redundant / Nested Comment Markers`** | Clean and sanitize nested or redundant comment delimiters across file. |
 | `sv-nd-scribe.overwriteHeaderFromTemplate` | **`SV_Scribe: Overwrite File Header from Template`** | Force overwrite the active file's header using the active template. |
 | `sv-nd-scribe.openHeaderTemplate` | **`SV_Scribe: Open Header Template to Edit`** | Open `header_template.txt` in the editor. |
 | `sv-nd-scribe.resetHeaderTemplate` | **`SV_Scribe: Reset Header Template to Default`** | Reset `header_template.txt` to the default factory template. |

@@ -58,7 +58,7 @@ class FixNd012(BaseFixer):
             desc_line = f"{indent}// {extracted_desc}\n"
             llm_generated = False
         else:
-            desc_line = f"{indent}// TODO: Add description for {kind} '{name}'\n"
+            desc_line = f"{indent}// TODO [SVND]: Add description for {kind} '{name}'\n"
             llm_generated = False
 
             provider = kwargs.get("provider")

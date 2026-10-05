@@ -3,7 +3,7 @@
 import re
 from typing import List, Dict, Any, Optional
 from agent.fixer.base_fixer import BaseFixer, FixProposal
-from agent.fixer.doc_helper import build_naturaldocs_comment
+from agent.fixer.doc_helper import build_naturaldocs_comment, analyze_process_block
 
 _RE = re.compile(r'begin\s*:\s*(\w+)')
 
@@ -25,7 +25,8 @@ class FixNd027(BaseFixer):
         line = source_lines[line_idx]
         indent = line[: len(line) - len(line.lstrip())]
 
-        name = "item"
+        inferred_name, _ = analyze_process_block(source_lines, line_idx)
+        name = inferred_name
         m = _RE.search(line)
         if m:
             name = m.group(1)

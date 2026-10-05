@@ -25,8 +25,9 @@ class CheckerDocumentationRule(BaseRule):
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         import re
         violations = []
-        nodes = self._find_tree_nodes_by_tag(context, "kCheckerDeclaration")
-        if nodes:
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            nodes = self._find_tree_nodes_by_tag(context, "kCheckerDeclaration")
             for node in nodes:
                 name = ""
                 text = getattr(node, 'text', '') or ""

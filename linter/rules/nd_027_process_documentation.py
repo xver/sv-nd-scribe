@@ -25,6 +25,32 @@ class ProcessDocumentationRule(BaseRule):
 
     def check(self, file_path: str, file_content: str, context: Any) -> List[RuleViolation]:
         violations = []
+
+        # AST node driven check
+        has_ast = context is not None and getattr(context, 'tree', None) is not None
+        if has_ast:
+            nodes = (
+                self._find_tree_nodes_by_tag(context, "kInitialStatement") +
+                self._find_tree_nodes_by_tag(context, "kAlwaysStatement") +
+                self._find_tree_nodes_by_tag(context, "kFinalStatement")
+            )
+            for node in nodes:
+                text = (getattr(node, 'text', '') or "").strip()
+                m = re.search(r"^(initial|always_ff|always_comb|always_latch|always|final)\b", text)
+                proc_kind = m.group(1) if m else "process"
+                line = self._node_start_line(node, file_content, context)
+                comments = self._comments_before_node(node, file_content, context)
+                if not comments:
+                    violations.append(
+                        self.create_violation(
+                            file_path=file_path,
+                            line=line,
+                            message=f"Process block '{proc_kind}' is missing preceding NaturalDocs comment."
+                        )
+                    )
+            return violations
+
+        # Fallback text parsing
         lines = file_content.splitlines()
         for i, line in enumerate(lines):
             match = re.match(r"^\s*(initial|always|always_ff|always_comb|always_latch|final)\b", line)
