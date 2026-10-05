@@ -4,6 +4,8 @@
 
 Real-time SystemVerilog in-editor diagnostic feedback and automated Quick Fix actions utilizing the **SV ND Scribe** linter and AI agent.
 
+> 🚀 **v0.1.8 Release Highlights:** Interactive `TODO [SVND]:` marker resolution at cursor (`Ctrl+.`), whole-file TODO resolving, redundant comment sanitizing, active `[SVND]` diagnostic underlines, and enhanced multi-root/sibling workspace detection.
+
 ---
 
 ## Getting Started (3 Steps)
@@ -61,7 +63,10 @@ This single command automatically configures:
    ```bash
    code .
    ```
-2. Install the **SV ND Scribe** extension from the VS Code Marketplace (search for `sv-nd-scribe`).
+2. Install the **SV ND Scribe** extension from the VS Code Marketplace (search for `sv-nd-scribe`) or install the packaged VSIX:
+   ```bash
+   code --install-extension vscode/sv-nd-scribe-vscode-0.1.8.vsix
+   ```
 3. Verify your installation by opening the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and selecting:
    **`SV_Scribe: Verify linter installation`**
 
@@ -143,6 +148,21 @@ python3 -m agent --fix-setup
 ```
 
 </details>
+
+---
+
+## What's New in v0.1.8
+
+- 🔍 **Interactive TODO [SVND] Resolution**:
+  - Hover or place your cursor on any `TODO [SVND]:` marker or generic placeholder comment (e.g. `Description for <item>`) and press `Ctrl+.` (macOS: `Cmd+.`) or click the 💡 lightbulb to trigger **"SV_Scribe: Resolve TODO [SVND] with Agent"**.
+  - Run **`SV_Scribe: Resolve all TODO [SVND] markers in file`** to resolve every placeholder stub across the file in a single atomic operation.
+  - Automatically updates generic tags (e.g. `Process: item` -> functional name, `Assign: tb_if` -> full hierarchical path).
+- 🧹 **Comment Sanitizer**:
+  - Run **`SV_Scribe: Remove Redundant / Nested Comment Markers`** from the Command Palette to strip accidental nested comment delimiters (e.g. `// /*`, `/* //`, `// //`) without altering your code.
+- 🚨 **Diagnostic Underlines for [SVND] Placeholders**:
+  - Unresolved `[SVND]` markers are now surfaced as active editor diagnostics with source tag `[SVND]`.
+- 🌐 **Smarter Scribe Home Auto-Detection**:
+  - Automatically discovers `sv-nd-scribe` installations in sibling workspaces (`../sv-nd-scribe`), handles VS Code variables (`${workspaceFolder}`), and validates linter engine directories.
 
 ---
 
