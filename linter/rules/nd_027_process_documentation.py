@@ -35,9 +35,27 @@ class ProcessDocumentationRule(BaseRule):
                 self._find_tree_nodes_by_tag(context, "kFinalStatement")
             )
             for node in nodes:
-                text = (getattr(node, 'text', '') or "").strip()
-                m = re.search(r"^(initial|always_ff|always_comb|always_latch|always|final)\b", text)
-                proc_kind = m.group(1) if m else "process"
+                tag = getattr(node, 'tag', '')
+                proc_kind = "process"
+                if tag == "kInitialStatement":
+                    proc_kind = "initial"
+                elif tag == "kFinalStatement":
+                    proc_kind = "final"
+                elif tag == "kAlwaysStatement":
+                    for c in getattr(node, 'children', []):
+                        ctag = getattr(c, 'tag', '')
+                        if ctag in ('always_ff', 'always_comb', 'always_latch', 'always'):
+                            proc_kind = ctag
+                            break
+                        ctext = (getattr(c, 'text', '') or "").strip()
+                        if ctext in ('always_ff', 'always_comb', 'always_latch', 'always'):
+                            proc_kind = ctext
+                            break
+                if proc_kind == "process":
+                    text = (getattr(node, 'text', '') or "").strip()
+                    m = re.search(r"^(initial|always_ff|always_comb|always_latch|always|final)\b", text)
+                    if m:
+                        proc_kind = m.group(1)
                 line = self._node_start_line(node, file_content, context)
                 comments = self._comments_before_node(node, file_content, context)
                 if not comments:

@@ -29,14 +29,19 @@ class CoverpointDocumentationRule(BaseRule):
         # AST node driven check
         has_ast = context is not None and getattr(context, 'tree', None) is not None
         if has_ast:
-            nodes = self._find_tree_nodes_by_tag(context, "kCoveragePoint")
+            nodes = (
+                self._find_tree_nodes_by_tag(context, "kCoverPoint") +
+                self._find_tree_nodes_by_tag(context, "kCoveragePoint")
+            )
             for node in nodes:
                 name = ""
                 if hasattr(node, 'find_all'):
                     try:
-                        id_nodes = list(node.find_all(lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'))
+                        id_nodes = list(node.find_all(
+                            lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                        ))
                         if id_nodes:
-                            name = id_nodes[0].text
+                            name = id_nodes[0].text.strip()
                     except Exception:
                         pass
                 if not name:

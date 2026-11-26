@@ -107,8 +107,42 @@ _PARAM_RE = re.compile(r'\(([^)]*)\)')
 def extract_function_params(line: str, source_lines: List[str] = None, line_idx: int = None) -> List[str]:
     """
     Extract parameter names from a function/task signature.
+    Prioritizes AST extraction when available; falls back to text analysis.
     Handles single-line and multi-line parameter lists.
     """
+    if source_lines and line_idx is not None:
+        try:
+            from linter.verible_verilog_syntax import VeribleVerilogSyntax
+            v_syntax = VeribleVerilogSyntax()
+            full_source = "".join(source_lines)
+            tree, _ = v_syntax.parse(full_source)
+            if tree is not None:
+                fn_nodes = list(tree.find_all(lambda n: getattr(n, 'tag', '') in (
+                    'kFunctionDeclaration', 'kTaskDeclaration',
+                    'kFunctionPrototype', 'kTaskPrototype',
+                    'kMethodDeclaration', 'kMethodPrototype'
+                )))
+                for fn in fn_nodes:
+                    node_text = getattr(fn, 'text', '') or ""
+                    clean_line = re.sub(r'//.*$', '', line).strip()
+                    if clean_line and clean_line in node_text:
+                        params = []
+                        for pl in fn.find_all(lambda n: getattr(n, 'tag', '') == 'kPortList'):
+                            for pi in pl.find_all(lambda n: getattr(n, 'tag', '') == 'kPortItem'):
+                                unquals = list(pi.find_all(lambda n: getattr(n, 'tag', '') == 'kUnqualifiedId'))
+                                if unquals:
+                                    syms = list(unquals[-1].find_all(lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'))
+                                    if syms:
+                                        params.append(syms[0].text.strip())
+                                else:
+                                    syms = list(pi.find_all(lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'))
+                                    if syms:
+                                        params.append(syms[-1].text.strip())
+                        if params:
+                            return params
+        except Exception:
+            pass
+
     sig_line = line
     if '(' in line and ')' not in line and source_lines and line_idx is not None:
         for extra_idx in range(line_idx + 1, min(line_idx + 10, len(source_lines))):

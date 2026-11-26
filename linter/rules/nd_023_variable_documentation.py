@@ -79,6 +79,48 @@ class VariableDocumentationRule(BaseRule):
                                 message=f"Variable or instance '{var_name}' is missing documentation."
                             )
                         )
+
+            # Check parameter and localparam declarations via AST tokens
+            param_nodes = self._find_tree_nodes_by_tag(context, "kParamDeclaration")
+            for node in param_nodes:
+                parent = getattr(node, 'parent', None)
+                in_excl = False
+                p = parent
+                while p is not None:
+                    tag = getattr(p, 'tag', '')
+                    if tag in {
+                        'kClockingDeclaration', 'kModportDeclaration',
+                        'kFunctionDeclaration', 'kTaskDeclaration',
+                        'kStructSpecifier', 'kUnionSpecifier',
+                        'kStructUnionMember', 'kDataTypeStruct',
+                        'kDataTypeUnion', 'kFormalParameterList',
+                        'kFormalParameterListDeclaration'
+                    }:
+                        in_excl = True
+                        break
+                    p = getattr(p, 'parent', None)
+
+                if in_excl:
+                    continue
+
+                names = self._extract_ast_param_names(node)
+                for param_name in names:
+                    if param_name in [
+                        "module", "package", "class", "function", "task",
+                        "interface", "covergroup", "checker", "end", "begin",
+                        "assign", "property", "clocking", "modport"
+                    ]:
+                        continue
+                    line = self._node_start_line(node, file_content, context)
+                    comments = self._comments_before_node(node, file_content, context)
+                    if not comments:
+                        violations.append(
+                            self.create_violation(
+                                file_path=file_path,
+                                line=line,
+                                message=f"Variable or instance '{param_name}' is missing documentation."
+                            )
+                        )
             return violations
 
         # Fallback text parsing
@@ -191,7 +233,7 @@ class VariableDocumentationRule(BaseRule):
             # Plain variable or interface instance (e.g. logic [31:0] addr; or nd_bus_if bus_if();)
             # Also matches parameter/localparam declarations.
             match = re.match(
-                r"^\s*(?:rand\s+|randc\s+)?(?:parameter\s+|localparam\s+)?(?:logic|bit|int|byte|string|time|real|[a-zA-Z_][a-zA-Z0-9_]*)\s+(?:\[[^\]]+\]\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:;|=|(?:\([^)]*\)\s*;))",
+                r"^\s*(?:rand\s+|randc\s+)?(?:parameter\s+|localparam\s+)?(?:logic|bit|int|byte|string|time|real|[a-zA-Z_][a-zA-Z0-9_]*)(?:\s+(?:unsigned|signed))?\s+(?:\[[^\]]+\]\s+)?([a-zA-Z_][a-zA-Z0-9_]*)(?:\s*\[[^\]]+\])*\s*(?:;|=|(?:\([^)]*\)\s*;))",
                 line
             )
             if match:

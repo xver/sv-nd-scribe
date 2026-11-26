@@ -553,6 +553,29 @@ class TestDocFixers(unittest.TestCase):
         self.assertIn("Forces watchdog clock", text_wd)
         self.assertNotIn("startup initialization and configuration setup", text_wd)
 
+    def test_issue6_nd016_scoped_function_end_label(self):
+        from agent.fixer.rules.fix_nd016_end_label import FixNd016
+        fixer = FixNd016()
+        lines = [
+            "class foo_config;\n",
+            "  extern function void set_checks_enable(bit checks_enable);\n",
+            "endclass : foo_config\n",
+            "\n",
+            "function void foo_config::set_checks_enable(bit checks_enable);\n",
+            "  m_checks_enable = checks_enable;\n",
+            "endfunction\n",
+        ]
+        violation = {
+            "rule": "ND-016",
+            "file": "test.sv",
+            "line": 7,
+            "message": "Missing labeled end statement for 'endfunction'."
+        }
+        proposal = fixer.propose(violation, lines)
+        self.assertIsNotNone(proposal)
+        self.assertIn(": set_checks_enable", proposal.patch_lines[0])
+        self.assertNotIn(": void", proposal.patch_lines[0])
+
 
 if __name__ == "__main__":
     unittest.main()

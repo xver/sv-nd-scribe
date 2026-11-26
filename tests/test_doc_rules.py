@@ -1076,6 +1076,78 @@ class IntegrationTests(unittest.TestCase):
         self.assertEqual(len(violations), 1)
         self.assertIn("timeout_count", violations[0].message)
 
+    def test_issue5_localparam_array_missing_doc(self):
+        rule = VariableDocumentationRule()
+        content = (
+            "class test_cls;\n"
+            "  localparam int FOO_1 [3] = '{0, 128, 64};\n"
+            "  localparam int FOO_2 [3] = '{0, 128, 526};\n"
+            "endclass : test_cls\n"
+        )
+        linter = NaturalDocLinter()
+        ctx = linter.prepare_context("test_issue5.sv", content)
+        violations = rule.check("test_issue5.sv", content, ctx)
+        self.assertEqual(len(violations), 2)
+        names = [v.message for v in violations]
+        self.assertTrue(any("FOO_1" in m for m in names))
+        self.assertTrue(any("FOO_2" in m for m in names))
+
+    def test_issue4_int_unsigned_variable_identifier_match(self):
+        rule = IdentifierMatchRule()
+        content = (
+            "class test_cls;\n"
+            "  // Variable: m_foo\n"
+            "  // Timeout counter.\n"
+            "  int unsigned m_foo;\n"
+            "endclass : test_cls\n"
+        )
+        linter = NaturalDocLinter()
+        ctx = linter.prepare_context("test_issue4.sv", content)
+        violations = rule.check("test_issue4.sv", content, ctx)
+        self.assertEqual(len(violations), 0)
+
+        # Fallback text check
+        violations_text = rule.check("test_issue4.sv", content, None)
+        self.assertEqual(len(violations_text), 0)
+
+    def test_issue7_static_function_int_unsigned_match_and_doc(self):
+        r19 = IdentifierMatchRule()
+        r17 = FunctionTaskDocumentationRule()
+        content = (
+            "class test_cls;\n"
+            "  // Function: foo\n"
+            "  // Computes checksum.\n"
+            "  //\n"
+            "  // Parameters:\n"
+            "  //   arg - Packet word.\n"
+            "  static function int unsigned foo(int unsigned arg);\n"
+            "    return arg;\n"
+            "  endfunction : foo\n"
+            "endclass : test_cls\n"
+        )
+        linter = NaturalDocLinter()
+        ctx = linter.prepare_context("test_issue7.sv", content)
+        v19 = r19.check("test_issue7.sv", content, ctx)
+        v17 = r17.check("test_issue7.sv", content, ctx)
+        self.assertEqual(len(v19), 0)
+        self.assertEqual(len(v17), 0)
+
+    def test_param_declaration_mismatch_detected(self):
+        rule = IdentifierMatchRule()
+        content = (
+            "class test_cls;\n"
+            "  // Parameter: WRONG_PARAM\n"
+            "  // Parameter docs.\n"
+            "  localparam int FOO_1 [3] = '{0, 128, 64};\n"
+            "endclass : test_cls\n"
+        )
+        linter = NaturalDocLinter()
+        ctx = linter.prepare_context("test_mismatch.sv", content)
+        violations = rule.check("test_mismatch.sv", content, ctx)
+        self.assertEqual(len(violations), 1)
+        self.assertIn("WRONG_PARAM", violations[0].message)
+        self.assertIn("FOO_1", violations[0].message)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -59,12 +59,18 @@ class OneVariablePerDeclarationRule(BaseRule):
                 if len(vars_found) > 1:
                     var_names = []
                     for v in vars_found:
-                        v_text = getattr(v, 'text', '').strip()
-                        m = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)", v_text)
-                        if m:
-                            var_names.append(m.group(1))
+                        syms = list(v.find_all(
+                            lambda s: getattr(s, 'tag', '') == 'SymbolIdentifier'
+                        ))
+                        if syms:
+                            var_names.append(syms[0].text.strip())
                         else:
-                            var_names.append(v_text.split("=")[0].split("[")[0].strip())
+                            v_text = getattr(v, 'text', '').strip()
+                            m = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)", v_text)
+                            if m:
+                                var_names.append(m.group(1))
+                            else:
+                                var_names.append(v_text.split("=")[0].split("[")[0].strip())
 
                     var_list_str = ", ".join(var_names) if var_names else text.strip()
                     line = self._node_start_line(node, file_content, context)

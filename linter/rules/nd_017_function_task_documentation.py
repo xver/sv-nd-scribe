@@ -45,23 +45,17 @@ class FunctionTaskDocumentationRule(BaseRule):
                         continue
 
                     kind = "task" if "task" in tag.lower() or re.search(r"\btask\b", text) else "function"
-                    name = ""
-                    if "Constructor" in tag or re.search(r"\bfunction\s+(?:automatic\s+)?new\b", text):
-                        name = "new"
-                    else:
-                        m = re.search(
-                            r"\b(?:extern\s+|external\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(?:function|task)(?:\s+automatic)?(?:\s+(?:void|(?:[\w:<>\$]+(?:\s*\[[^\]]+\])*)|\s*(?:\[[^\]]+\])))?\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)",
-                            text
-                        )
-                        if m:
-                            name = m.group(1)
-                        elif hasattr(node, 'find_all'):
-                            try:
-                                id_nodes = list(node.find_all(lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'))
-                                if id_nodes:
-                                    name = id_nodes[-1].text
-                            except Exception:
-                                pass
+                    name = self._extract_ast_function_task_name(node)
+                    if not name:
+                        if "Constructor" in tag or re.search(r"\bfunction\s+(?:automatic\s+)?new\b", text):
+                            name = "new"
+                        else:
+                            m = re.search(
+                                r"\b(?:extern\s+|external\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(?:function|task)(?:\s+automatic)?(?:\s+(?:void\b|(?:[\w:<>\[\]\$]+(?:\s+(?:unsigned|signed))?(?:\s*\[[^\]]+\])*)|\s*(?:\[[^\]]+\])))?\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)",
+                                text
+                            )
+                            if m:
+                                name = m.group(1)
 
                     if name:
                         line = self._node_start_line(node, file_content, context)
@@ -76,9 +70,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                             )
                         else:
                             comment_text = "\n".join(comments)
-                            src_lines = file_content.splitlines()
-                            line_zero_idx = max(0, min(len(src_lines) - 1, line - 1))
-                            fn_params = extract_function_params(src_lines[line_zero_idx], src_lines, line_zero_idx)
+                            fn_params = self._extract_ast_function_task_params(node)
                             if fn_params and "parameters:" not in comment_text.lower():
                                 violations.append(
                                     self.create_violation(
@@ -123,7 +115,7 @@ class FunctionTaskDocumentationRule(BaseRule):
                 continue
 
             match = re.match(
-                r"^\s*(?:extern\s+|external\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(function|task)(?:\s+automatic)?(?:\s+(?:void|(?:[\w:<>\$]+(?:\s*\[[^\]]+\])*)|\s*(?:\[[^\]]+\])))?\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)",
+                r"^\s*(?:extern\s+|external\s+)?(?:pure\s+virtual\s+|virtual\s+|protected\s+|local\s+|static\s+)*(function|task)(?:\s+automatic)?(?:\s+(?:void\b|(?:[\w:<>\$]+(?:\s+(?:unsigned|signed))?(?:\s*\[[^\]]+\])*)|\s*(?:\[[^\]]+\])))?\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)",
                 line
             )
             if match:

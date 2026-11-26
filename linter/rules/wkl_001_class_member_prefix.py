@@ -100,9 +100,15 @@ class ClassMemberPrefixRule(BaseRule):
 
                 if vars_found:
                     for v in vars_found:
-                        v_text = getattr(v, 'text', '').strip()
-                        m = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)", v_text)
-                        var_name = m.group(1) if m else v_text.split("=")[0].split("[")[0].strip()
+                        syms = list(v.find_all(
+                            lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                        ))
+                        if syms:
+                            var_name = syms[0].text.strip()
+                        else:
+                            v_text = getattr(v, 'text', '').strip()
+                            m = re.match(r"^([a-zA-Z_][a-zA-Z0-9_]*)", v_text)
+                            var_name = m.group(1) if m else v_text.split("=")[0].split("[")[0].strip()
                         if self._is_invalid_member_name(var_name, EXCEPTIONS):
                             line = self._node_start_line(dnode, file_content, context)
                             violations.append(

@@ -830,3 +830,131 @@ class BaseRule(ABC):
             )
         return None
 
+    def _extract_ast_param_names(self, node: Any) -> List[str]:
+        """
+        Extract declared parameter identifiers from kParamDeclaration node.
+
+        Traverses AST children to locate identifiers in kParamType,
+        kParameterAssign, and kTypeAssignment, avoiding type symbols.
+        """
+        names = []
+        if not hasattr(node, 'find_all'):
+            return names
+
+        # 1. Direct SymbolIdentifier in kParamType (scalar or array params)
+        for pt in node.find_all(lambda n: getattr(n, 'tag', '') == 'kParamType'):
+            for c in getattr(pt, 'children', []):
+                if getattr(c, 'tag', '') == 'SymbolIdentifier':
+                    names.append(c.text.strip())
+            if not names:
+                syms = list(pt.find_all(
+                    lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                ))
+                if syms:
+                    names.append(syms[-1].text.strip())
+
+        # 2. Comma-separated parameter assignments (kParameterAssign)
+        for pa in node.find_all(lambda n: getattr(n, 'tag', '') == 'kParameterAssign'):
+            syms = list(pa.find_all(
+                lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+            ))
+            if syms:
+                names.append(syms[0].text.strip())
+
+        # 3. Type parameters (kTypeAssignment)
+        for ta in node.find_all(lambda n: getattr(n, 'tag', '') == 'kTypeAssignment'):
+            syms = list(ta.find_all(
+                lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+            ))
+            if syms:
+                names.append(syms[0].text.strip())
+
+        if not names:
+            syms = list(node.find_all(
+                lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+            ))
+            if syms:
+                names.append(syms[0].text.strip())
+
+        # Preserve order while removing duplicates
+        return list(dict.fromkeys(names))
+
+    def _extract_ast_function_task_name(self, node: Any) -> Optional[str]:
+        """
+        Extract function or task identifier from AST declaration node.
+
+        Locates the identifier from kUnqualifiedId or kQualifiedId within
+        the function/task header, properly skipping return types and scopes.
+        """
+        text = getattr(node, 'text', '') or ""
+        if re.search(r'\bfunction\s+(?:automatic\s+)?new\b', text):
+            return "new"
+
+        headers = []
+        if hasattr(node, 'find_all'):
+            headers = list(node.find_all(
+                lambda n: getattr(n, 'tag', '') in (
+                    'kFunctionHeader', 'kTaskHeader',
+                    'kFunctionPrototype', 'kTaskPrototype'
+                )
+            ))
+        search_nodes = headers if headers else [node]
+
+        for h in search_nodes:
+            for child in getattr(h, 'children', []):
+                ctag = getattr(child, 'tag', '')
+                if ctag == 'kUnqualifiedId':
+                    syms = list(child.find_all(
+                        lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                    ))
+                    if syms:
+                        return syms[0].text.strip()
+                elif ctag == 'kQualifiedId':
+                    unquals = list(child.find_all(
+                        lambda n: getattr(n, 'tag', '') == 'kUnqualifiedId'
+                    ))
+                    if unquals:
+                        syms = list(unquals[-1].find_all(
+                            lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                        ))
+                        if syms:
+                            return syms[0].text.strip()
+                elif ctag == 'SymbolIdentifier':
+                    return child.text.strip()
+        return None
+
+    def _extract_ast_function_task_params(self, node: Any) -> List[str]:
+        """
+        Extract formal parameter identifiers from function or task AST node.
+
+        Traverses kPortList -> kPortItem -> kUnqualifiedId -> SymbolIdentifier.
+        """
+        params = []
+        if not hasattr(node, 'find_all'):
+            return params
+
+        port_lists = list(node.find_all(
+            lambda n: getattr(n, 'tag', '') == 'kPortList'
+        ))
+        for pl in port_lists:
+            port_items = list(pl.find_all(
+                lambda n: getattr(n, 'tag', '') == 'kPortItem'
+            ))
+            for pi in port_items:
+                unqual_ids = list(pi.find_all(
+                    lambda n: getattr(n, 'tag', '') == 'kUnqualifiedId'
+                ))
+                if unqual_ids:
+                    syms = list(unqual_ids[-1].find_all(
+                        lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                    ))
+                    if syms:
+                        params.append(syms[0].text.strip())
+                else:
+                    syms = list(pi.find_all(
+                        lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                    ))
+                    if syms:
+                        params.append(syms[-1].text.strip())
+        return params
+

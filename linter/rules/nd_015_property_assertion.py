@@ -31,18 +31,21 @@ class PropertyAssertionRule(BaseRule):
         if has_ast:
             nodes = self._find_tree_nodes_by_tag(context, "kPropertyDeclaration")
             for node in nodes:
-                text = getattr(node, 'text', '') or ""
                 prop_name = ""
-                m = re.search(r"\bproperty\s+([a-zA-Z_][a-zA-Z0-9_]*)", text)
-                if m:
-                    prop_name = m.group(1)
-                elif hasattr(node, 'find_all'):
+                if hasattr(node, 'find_all'):
                     try:
-                        id_nodes = list(node.find_all(lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'))
+                        id_nodes = list(node.find_all(
+                            lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                        ))
                         if id_nodes:
                             prop_name = id_nodes[0].text.strip()
                     except Exception:
                         pass
+                if not prop_name:
+                    text = getattr(node, 'text', '') or ""
+                    m = re.search(r"\bproperty\s+([a-zA-Z_][a-zA-Z0-9_]*)", text)
+                    if m:
+                        prop_name = m.group(1)
                 if not prop_name:
                     prop_name = "property"
 

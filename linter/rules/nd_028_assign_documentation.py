@@ -35,9 +35,28 @@ class AssignDocumentationRule(BaseRule):
         if has_ast:
             nodes = self._find_tree_nodes_by_tag(context, "kContinuousAssignmentStatement")
             for node in nodes:
-                text = getattr(node, 'text', '') or ""
-                m = _ASSIGN_NAME_RE.search(text)
-                sig_name = m.group(1) if m else "item"
+                sig_name = ""
+                if hasattr(node, 'find_all'):
+                    try:
+                        net_assigns = list(node.find_all(
+                            lambda n: getattr(n, 'tag', '') == 'kNetVariableAssignment'
+                        ))
+                        if net_assigns:
+                            children = getattr(net_assigns[0], 'children', [])
+                            if children:
+                                sig_name = getattr(children[0], 'text', '').strip()
+                        if not sig_name:
+                            unquals = list(node.find_all(
+                                lambda n: getattr(n, 'tag', '') == 'kUnqualifiedId'
+                            ))
+                            if unquals:
+                                sig_name = unquals[0].text.strip()
+                    except Exception:
+                        pass
+                if not sig_name:
+                    text = getattr(node, 'text', '') or ""
+                    m = _ASSIGN_NAME_RE.search(text)
+                    sig_name = m.group(1) if m else "item"
                 line = self._node_start_line(node, file_content, context)
                 comments = self._comments_before_node(node, file_content, context)
                 if not comments:

@@ -73,7 +73,8 @@ class IdentifierMatchRule(BaseRule):
             "kFunctionDeclaration": ("function", FUNC_KEYWORDS, r"\bfunction\s+(?:automatic\s+)?(?:void\s+|[\w:<>\[\]]+\s+)?([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kTaskDeclaration": ("task", TASK_KEYWORDS, r"\btask\s+(?:automatic\s+)?([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kCovergroupDeclaration": ("covergroup", ["Covergroup", "covergroup"], r"\bcovergroup\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
-            "kCoveragePoint": ("coverpoint", ["Coverpoint", "coverpoint"], r"(?:([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*)?coverpoint\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
+            "kCoverPoint": ("coverpoint", ["Coverpoint", "coverpoint", "Point", "point"], r"(?:([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*)?coverpoint\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
+            "kCoveragePoint": ("coverpoint", ["Coverpoint", "coverpoint", "Point", "point"], r"(?:([a-zA-Z_][a-zA-Z0-9_]*)\s*:\s*)?coverpoint\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kCheckerDeclaration": ("checker", ["Checker", "checker"], r"\bchecker\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kClockingDeclaration": ("clocking", ["Clocking", "clocking"], r"\bclocking\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
             "kModportDeclaration": ("modport", ["Modport", "modport"], r"\bmodport\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
@@ -100,7 +101,51 @@ class IdentifierMatchRule(BaseRule):
                         if tag in ["kFunctionDeclaration", "kTaskDeclaration"] and "::" in text:
                             continue
 
-                        actual_name = self._extract_node_code_name(node, pattern)
+                        if tag in ["kFunctionDeclaration", "kTaskDeclaration"]:
+                            actual_name = self._extract_ast_function_task_name(node)
+                        else:
+                            actual_name = None
+                            if hasattr(node, 'find_all'):
+                                try:
+                                    if tag == "kTypeDeclaration":
+                                        for child in getattr(node, 'children', []):
+                                            if getattr(child, 'tag', '') == 'SymbolIdentifier':
+                                                actual_name = child.text.strip()
+                                                break
+                                    elif tag == "kContinuousAssignmentStatement":
+                                        net_assigns = list(node.find_all(
+                                            lambda n: getattr(n, 'tag', '') == 'kNetVariableAssignment'
+                                        ))
+                                        if net_assigns:
+                                            children = getattr(net_assigns[0], 'children', [])
+                                            if children:
+                                                actual_name = getattr(children[0], 'text', '').strip()
+                                    elif tag in ("kBindDirective", "kBindDeclaration"):
+                                        gate_insts = list(node.find_all(
+                                            lambda n: getattr(n, 'tag', '') == 'kGateInstance'
+                                        ))
+                                        if gate_insts:
+                                            syms = list(gate_insts[0].find_all(
+                                                lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                                            ))
+                                            if syms:
+                                                actual_name = syms[0].text.strip()
+                                    elif tag in ("kCoveragePoint", "kCoverPoint"):
+                                        id_nodes = list(node.find_all(
+                                            lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                                        ))
+                                        if id_nodes:
+                                            actual_name = id_nodes[0].text.strip()
+                                    else:
+                                        id_nodes = list(node.find_all(
+                                            lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                                        ))
+                                        if id_nodes:
+                                            actual_name = id_nodes[0].text.strip()
+                                except Exception:
+                                    pass
+                            if not actual_name:
+                                actual_name = self._extract_node_code_name(node, pattern)
                         if actual_name:
                             line = self._node_start_line(node, file_content, context)
                             comments = self._get_comments(node, file_content, context, line)
@@ -145,6 +190,26 @@ class IdentifierMatchRule(BaseRule):
                                     )
                                 )
 
+            # Check kParamDeclaration nodes in AST mode
+            param_nodes = self._find_tree_nodes_by_tag(context, "kParamDeclaration")
+            for node in param_nodes:
+                p_names = self._extract_ast_param_names(node)
+                line = self._node_start_line(node, file_content, context)
+                comments = self._get_comments(node, file_content, context, line)
+                if comments:
+                    for actual_name in p_names:
+                        if actual_name in ["module", "package", "class", "function", "task", "interface", "end", "begin", "assign", "bind", "property", "sequence", "clocking", "modport", "constraint", "program", "checker", "covergroup"]:
+                            continue
+                        doc_name = self._extract_documented_name(comments, VAR_KEYWORDS)
+                        if doc_name and doc_name != actual_name:
+                            violations.append(
+                                self.create_violation(
+                                    file_path=file_path,
+                                    line=line,
+                                    message=f"Documented identifier '{doc_name}' does not match code identifier '{actual_name}'."
+                                )
+                            )
+
             return violations
 
         # Fallback text parsing
@@ -154,7 +219,7 @@ class IdentifierMatchRule(BaseRule):
             ("package", ["Package", "package"], r"^\s*package\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
             ("interface", ["Interface", "interface"], r"^\s*interface\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
             ("module", ["Module", "module"], r"^\s*module\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
-            ("function", FUNC_KEYWORDS, r"^\s*(?:pure\s+|virtual\s+|protected\s+|local\s+|static\s+)*function\s+(?:automatic\s+)?(?:void\s+|[\w:<>\[\]\$\s]+\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)"),
+            ("function", FUNC_KEYWORDS, r"^\s*(?:pure\s+|virtual\s+|protected\s+|local\s+|static\s+)*function\s+(?:automatic\s+)?(?:void\b|(?:[\w:<>\[\]\$]+(?:\s+(?:unsigned|signed))?(?:\s*\[[^\]]+\])*)|\s*(?:\[[^\]]+\]))?\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)"),
             ("task", TASK_KEYWORDS, r"^\s*(?:pure\s+|virtual\s+|protected\s+|local\s+|static\s+)*task\s+(?:automatic\s+)?([a-zA-Z_][a-zA-Z0-9_]*)\s*(?:\(|;)"),
             ("covergroup", ["Covergroup", "covergroup"], r"^\s*covergroup\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
             ("checker", ["Checker", "checker"], r"^\s*checker\s+([a-zA-Z_][a-zA-Z0-9_]*)"),
@@ -274,7 +339,7 @@ class IdentifierMatchRule(BaseRule):
 
             # Variable / instance matching
             var_match = re.match(
-                r"^\s*(?:rand\s+|randc\s+|parameter\s+|localparam\s+|const\s+|static\s+|automatic\s+|protected\s+|local\s+|virtual\s+|var\s+)*(?:logic|bit|int|byte|shortint|longint|integer|time|real|shortreal|string|event|reg|wire|[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)?(?:\s*#\s*\([^)]*\))?)\s+(?:\[[^\]]+\]\s*)*([a-zA-Z_][a-zA-Z0-9_]*)",
+                r"^\s*(?:rand\s+|randc\s+|parameter\s+|localparam\s+|const\s+|static\s+|automatic\s+|protected\s+|local\s+|virtual\s+|var\s+)*(?:logic|bit|int|byte|shortint|longint|integer|time|real|shortreal|string|event|reg|wire|[a-zA-Z_][a-zA-Z0-9_]*(?:::[a-zA-Z_][a-zA-Z0-9_]*)?(?:\s*#\s*\([^)]*\))?)(?:\s+(?:unsigned|signed))?\s+(?:\[[^\]]+\]\s*)*([a-zA-Z_][a-zA-Z0-9_]*)",
                 line
             )
             if var_match:

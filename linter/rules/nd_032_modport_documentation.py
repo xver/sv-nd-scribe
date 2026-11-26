@@ -33,16 +33,27 @@ class ModportDocumentationRule(BaseRule):
             nodes = self._find_tree_nodes_by_tag(context, "kModportDeclaration")
             for node in nodes:
                 line = self._node_start_line(node, file_content, context)
-                text = getattr(node, 'text', '') or ""
-                m = re.search(r'\bmodport\s+([a-zA-Z_][a-zA-Z0-9_]*)', text)
-                if not m:
-                    lines_all = file_content.splitlines()
-                    line_idx = line - 1
-                    line_str = lines_all[line_idx] if 0 <= line_idx < len(lines_all) else ""
-                    m_line = re.search(r'\bmodport\s+([a-zA-Z_][a-zA-Z0-9_]*)', line_str)
-                    name = m_line.group(1) if m_line else "mp"
-                else:
-                    name = m.group(1)
+                name = ""
+                if hasattr(node, 'find_all'):
+                    try:
+                        id_nodes = list(node.find_all(
+                            lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                        ))
+                        if id_nodes:
+                            name = id_nodes[0].text.strip()
+                    except Exception:
+                        pass
+                if not name:
+                    text = getattr(node, 'text', '') or ""
+                    m = re.search(r'\bmodport\s+([a-zA-Z_][a-zA-Z0-9_]*)', text)
+                    if not m:
+                        lines_all = file_content.splitlines()
+                        line_idx = line - 1
+                        line_str = lines_all[line_idx] if 0 <= line_idx < len(lines_all) else ""
+                        m_line = re.search(r'\bmodport\s+([a-zA-Z_][a-zA-Z0-9_]*)', line_str)
+                        name = m_line.group(1) if m_line else "mp"
+                    else:
+                        name = m.group(1)
                 comments = self._comments_before_node(node, file_content, context)
                 if not comments:
                     violations.append(

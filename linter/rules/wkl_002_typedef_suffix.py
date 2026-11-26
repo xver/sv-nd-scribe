@@ -31,10 +31,35 @@ class TypedefSuffixRule(BaseRule):
             type_nodes = self._find_tree_nodes_by_tag(context, "kTypeDeclaration")
             for node in type_nodes:
                 text = getattr(node, 'text', '') or ""
-                is_enum = "enum" in text
-                m = re.search(r"\btypedef\b.*?\b([a-zA-Z_][a-zA-Z0-9_]*)\s*;\s*$", text.strip(), re.DOTALL)
-                if m:
-                    t_name = m.group(1)
+                is_enum = False
+                if hasattr(node, 'find_all'):
+                    enum_nodes = list(node.find_all(
+                        lambda n: getattr(n, 'tag', '') in (
+                            'kDataTypeEnum', 'kEnumSpecifier', 'enum'
+                        )
+                    ))
+                    is_enum = len(enum_nodes) > 0
+                if not is_enum:
+                    is_enum = "enum" in text
+
+                t_name = ""
+                for child in getattr(node, 'children', []):
+                    if getattr(child, 'tag', '') == 'SymbolIdentifier':
+                        t_name = child.text.strip()
+                        break
+                if not t_name and hasattr(node, 'find_all'):
+                    try:
+                        id_nodes = list(node.find_all(
+                            lambda n: getattr(n, 'tag', '') == 'SymbolIdentifier'
+                        ))
+                        if id_nodes:
+                            t_name = id_nodes[-1].text.strip() if is_enum else id_nodes[0].text.strip()
+                    except Exception:
+                        pass
+                if not t_name:
+                    m = re.search(r"\btypedef\b.*?\b([a-zA-Z_][a-zA-Z0-9_]*)\s*;\s*$", text.strip(), re.DOTALL)
+                    if m:
+                        t_name = m.group(1)
                     line = self._node_start_line(node, file_content, context)
                     if is_enum and not t_name.endswith(("_e", "_enum_t", "_t")):
                         violations.append(
